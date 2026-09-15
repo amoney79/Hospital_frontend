@@ -62,7 +62,7 @@ export function PaymentForm({ onSuccess, compact = false }: PaymentFormProps) {
               <p className="text-xs text-gray-500 mt-0.5">30-day access · All modules</p>
             </div>
             <div className="text-right">
-              <span className="text-2xl font-bold text-gray-900">$299</span>
+              <span className="text-2xl font-bold text-gray-900">Ksh.4999</span>
               <span className="text-sm text-gray-500">/mo</span>
             </div>
           </div>
@@ -84,7 +84,7 @@ export function PaymentForm({ onSuccess, compact = false }: PaymentFormProps) {
             <p className="text-xs text-gray-500">30-day access</p>
           </div>
           <div>
-            <span className="text-xl font-bold text-gray-900">$299</span>
+            <span className="text-xl font-bold text-gray-900">Ksh.4999</span>
             <span className="text-xs text-gray-500">/mo</span>
           </div>
         </div>
