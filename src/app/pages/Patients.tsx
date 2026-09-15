@@ -39,6 +39,9 @@ import {
 } from '../components/ui/dialog';
 import { mockPatients, mockMedicalRecords, mockDoctors, Patient, MedicalRecord } from '../data/mockData';
 import { patientApi, medicalRecordApi } from '../services/api';
+import { HospitalSettings } from '../services/api';
+import { useHospitalSettings } from '../context/HospitalSettingsContext';
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,7 +90,7 @@ function InfoRow({ label, value }: { label: string; value?: string | number }) {
 
 // ─── Print ────────────────────────────────────────────────────────────────────
 
-function printPatientRecord(patient: Patient, records: MedicalRecord[]) {
+function printPatientRecord(patient: Patient, records: MedicalRecord[], settings: HospitalSettings) {
   const patientRecords = records.filter((r) => r.patientId === patient.id);
   const safeType: PatientType = (patient.patientType && TYPE_LABEL[patient.patientType]) ? patient.patientType : 'outpatient';
   const safeId = String(patient.id || '');
@@ -169,8 +172,8 @@ function printPatientRecord(patient: Patient, records: MedicalRecord[]) {
 <body>
   <div class="header">
     <div>
-      <div class="hospital">HealthCare Medical Center</div>
-      <div style="font-size:12px;color:#6b7280">500 Medical Drive, New York, NY 10001 · +1 (800) 555-0100</div>
+      <div class="hospital">${settings.hospitalName}</div>
+      <div style="font-size:12px;color:#6b7280">${settings.address} · ${settings.phone}</div>
     </div>
     <div style="text-align:right;font-size:12px;color:#6b7280">
       Printed: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}<br/>
@@ -530,12 +533,13 @@ function AddRecordForm({ patient, onAdd }: AddRecordFormProps) {
 interface PatientDetailProps {
   patient: Patient;
   records: MedicalRecord[];
+  settings: HospitalSettings;
   onAddRecord: (r: MedicalRecord) => void;
   onEdit: () => void;
   onClose: () => void;
 }
 
-function PatientDetail({ patient, records, onAddRecord, onEdit, onClose }: PatientDetailProps) {
+function PatientDetail({ patient, records, settings, onAddRecord, onEdit, onClose }: PatientDetailProps) {
   const patientRecords = records.filter((r) => r.patientId === patient.id);
 
   return (
@@ -560,7 +564,7 @@ function PatientDetail({ patient, records, onAddRecord, onEdit, onClose }: Patie
           <Button variant="outline" size="sm" onClick={onEdit}>
             <Edit className="w-4 h-4 mr-1" /> Edit
           </Button>
-          <Button variant="outline" size="sm" onClick={() => printPatientRecord(patient, records)}>
+          <Button variant="outline" size="sm" onClick={() => printPatientRecord(patient, records, settings)}>
             <Printer className="w-4 h-4 mr-1" /> Print
           </Button>
         </div>
@@ -709,6 +713,7 @@ function PatientDetail({ patient, records, onAddRecord, onEdit, onClose }: Patie
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function Patients() {
+  const { settings } = useHospitalSettings();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -932,6 +937,7 @@ export default function Patients() {
             <PatientDetail
               patient={viewingPatient}
               records={records}
+              settings={settings}
               onAddRecord={handleAddRecord}
               onEdit={() => {
                 setViewingPatient(null);

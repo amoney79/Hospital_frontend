@@ -10,9 +10,11 @@ import {
 } from '../components/ui/dialog';
 import { PaymentForm } from '../components/PaymentForm';
 import { useAuth } from '../context/AuthContext';
+import { useHospitalSettings } from '../context/HospitalSettingsContext';
 
 export default function SystemLocked() {
   const { user, logout } = useAuth();
+  const { settings } = useHospitalSettings();
   const [renewOpen, setRenewOpen] = useState(false);
 
   return (
@@ -85,11 +87,11 @@ export default function SystemLocked() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-gray-400 text-sm">
                 <Mail className="w-4 h-4 shrink-0 text-gray-600" />
-                admin@healthcare-mc.com
+                {settings.email}
               </div>
               <div className="flex items-center gap-2 text-gray-400 text-sm">
                 <Phone className="w-4 h-4 shrink-0 text-gray-600" />
-                +1 (800) 555-0100
+                {settings.phone}
               </div>
             </div>
           </div>

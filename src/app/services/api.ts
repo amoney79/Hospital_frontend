@@ -15,6 +15,64 @@ import {
 
 const BASE_URL = 'http://localhost:8081/api';
 
+export interface HospitalSettings {
+  hospitalName: string;
+  registrationNumber: string;
+  taxId: string;
+  address: string;
+  phone: string;
+  email: string;
+  website: string;
+  timezone: string;
+  description: string;
+  operatingHours: { day: string; open: string; close: string }[];
+}
+
+export interface SystemUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  department?: string;
+  employeeId?: string;
+  password?: string;
+}
+
+export const DEFAULT_HOSPITAL_SETTINGS: HospitalSettings = {
+  hospitalName: 'HealthCare Medical Center',
+  registrationNumber: 'HMC-2010-00842',
+  taxId: '47-2930011',
+  address: '500 Medical Drive, New York, NY 10001',
+  phone: '+1 (800) 555-0100',
+  email: 'admin@healthcare-mc.com',
+  website: 'www.healthcare-mc.com',
+  timezone: 'africa-nairobi',
+  description: 'A leading multi-specialty medical center providing compassionate, high-quality healthcare to the community since 2010.',
+  operatingHours: [
+    { day: 'Monday – Friday', open: '08:00', close: '20:00' },
+    { day: 'Saturday', open: '09:00', close: '17:00' },
+    { day: 'Sunday', open: '10:00', close: '14:00' },
+  ],
+};
+
+const fallbackUsers: SystemUser[] = [
+  { id: '1', name: 'Admin User', email: 'admin@healthcare-mc.com', role: 'Administrator', department: 'Administration', employeeId: 'EMP-0001' },
+  { id: '2', name: 'Dr. Robert Anderson', email: 'doctor@healthcare-mc.com', role: 'Doctor', department: 'General Medicine', employeeId: 'EMP-0002' },
+];
+
+function localValue<T>(key: string, fallback: T): T {
+  try {
+    const value = localStorage.getItem(key);
+    return value ? (JSON.parse(value) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function setLocalValue(key: string, value: unknown) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
 async function fetchJson<T>(url: string, options?: RequestInit, fallbackData?: T): Promise<T> {
   try {
     const res = await fetch(url, {
@@ -344,5 +402,41 @@ export const authApi = {
         token: 'mock-jwt-token',
       }
     );
+  },
+};
+
+// ─── Settings and User Administration API ───────────────────────────────────
+
+export const settingsApi = {
+  async get(): Promise<HospitalSettings> {
+    return fetchJson<HospitalSettings>(`${BASE_URL}/settings`, undefined, localValue('hms_settings', DEFAULT_HOSPITAL_SETTINGS));
+  },
+
+  async update(settings: HospitalSettings): Promise<HospitalSettings> {
+    const saved = await fetchJson<HospitalSettings>(
+      `${BASE_URL}/settings`,
+      { method: 'PUT', body: JSON.stringify(settings) },
+      settings
+    );
+    setLocalValue('hms_settings', saved);
+    return saved;
+  },
+};
+
+export const usersApi = {
+  async getAll(): Promise<SystemUser[]> {
+    return fetchJson<SystemUser[]>(`${BASE_URL}/users`, undefined, localValue('hms_users', fallbackUsers));
+  },
+
+  async create(user: Omit<SystemUser, 'id'>): Promise<SystemUser> {
+    const payload = { ...user, id: String(Date.now()) };
+    const created = await fetchJson<SystemUser>(
+      `${BASE_URL}/users`,
+      { method: 'POST', body: JSON.stringify(payload) },
+      payload
+    );
+    const users = localValue<SystemUser[]>('hms_users', fallbackUsers);
+    setLocalValue('hms_users', [...users, created]);
+    return created;
   },
 };

@@ -2,6 +2,7 @@ import { Component, ReactNode, ErrorInfo } from 'react';
 import { RouterProvider } from 'react-router';
 import { router } from './routes';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { HospitalSettingsProvider } from './context/HospitalSettingsContext';
 import Login from './pages/Login';
 import Payment from './pages/Payment';
 import SystemLocked from './pages/SystemLocked';
@@ -76,7 +77,9 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <AppContent />
+        <HospitalSettingsProvider>
+          <AppContent />
+        </HospitalSettingsProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

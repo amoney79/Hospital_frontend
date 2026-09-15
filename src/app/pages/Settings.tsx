@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Building2,
   User,
@@ -17,6 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { Switch } from '../components/ui/switch';
+import { useHospitalSettings } from '../context/HospitalSettingsContext';
+import { HospitalSettings, SystemUser, usersApi } from '../services/api';
 
 function SavedBanner() {
   return (
@@ -40,10 +42,20 @@ function SectionCard({ title, children }: { title: string; children: React.React
 
 /* ── General / Hospital Profile ── */
 function GeneralSettings() {
+  const { settings, loading, saveSettings } = useHospitalSettings();
   const [saved, setSaved] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [form, setForm] = useState<HospitalSettings>(settings);
+
+  useEffect(() => setForm(settings), [settings]);
+
+  const update = (key: keyof HospitalSettings, value: string) => {
+    setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await saveSettings(form);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -54,43 +66,45 @@ function GeneralSettings() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <Label htmlFor="hospitalName">Hospital Name</Label>
-            <Input id="hospitalName" defaultValue="HealthCare Medical Center" className="mt-1" />
+            <Input id="hospitalName" value={form.hospitalName} onChange={(e) => update('hospitalName', e.target.value)} className="mt-1" required />
           </div>
           <div>
             <Label htmlFor="regNumber">Registration Number</Label>
-            <Input id="regNumber" defaultValue="HMC-2010-00842" className="mt-1" />
+            <Input id="regNumber" value={form.registrationNumber} onChange={(e) => update('registrationNumber', e.target.value)} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="taxId">Tax ID</Label>
-            <Input id="taxId" defaultValue="47-2930011" className="mt-1" />
+            <Input id="taxId" value={form.taxId} onChange={(e) => update('taxId', e.target.value)} className="mt-1" />
           </div>
           <div className="md:col-span-2">
             <Label htmlFor="address">Address</Label>
-            <Input id="address" defaultValue="500 Medical Drive, New York, NY 10001" className="mt-1" />
+            <Input id="address" value={form.address} onChange={(e) => update('address', e.target.value)} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" defaultValue="+1 (800) 555-0100" className="mt-1" />
+            <Input id="phone" value={form.phone} onChange={(e) => update('phone', e.target.value)} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" defaultValue="admin@healthcare-mc.com" className="mt-1" />
+            <Input id="email" type="email" value={form.email} onChange={(e) => update('email', e.target.value)} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="website">Website</Label>
-            <Input id="website" defaultValue="www.healthcare-mc.com" className="mt-1" />
+            <Input id="website" value={form.website} onChange={(e) => update('website', e.target.value)} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="timezone">Timezone</Label>
-            <Select defaultValue="Kenya-Nairobi">
+            <Select value={form.timezone} onValueChange={(value) => update('timezone', value)}>
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Kenya-Nairobi">Kenya/ Nairobi (EST)</SelectItem>
+                <SelectItem value="africa-nairobi">Africa / Nairobi (EAT)</SelectItem>
+                <SelectItem value="europe-london">Europe / London (GMT)</SelectItem>
+                <SelectItem value="asia-singapore">Asia / Singapore (SGT)</SelectItem>
                 <SelectItem value="america-chicago">America / Chicago (CST)</SelectItem>
                 <SelectItem value="america-los_angeles">America / Los Angeles (PST)</SelectItem>
-                <SelectItem value="europe-london">Europe / London (GMT)</SelectItem>
+                <SelectItem value="australia-sydney">Australia / Sydney (AEST)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -99,7 +113,8 @@ function GeneralSettings() {
             <Textarea
               id="description"
               rows={3}
-              defaultValue="A leading multi-specialty medical center providing compassionate, high-quality healthcare to the community since 2010."
+              value={form.description}
+              onChange={(e) => update('description', e.target.value)}
               className="mt-1"
             />
           </div>
@@ -108,16 +123,12 @@ function GeneralSettings() {
 
       <SectionCard title="Operating Hours">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            { day: 'Monday – Friday', open: '08:00', close: '20:00' },
-            { day: 'Saturday', open: '09:00', close: '17:00' },
-            { day: 'Sunday', open: '10:00', close: '14:00' },
-          ].map(({ day, open, close }) => (
+          {form.operatingHours.map(({ day, open, close }, index) => (
             <div key={day} className="flex items-center gap-3">
               <span className="text-sm text-gray-600 w-36 shrink-0">{day}</span>
-              <Input type="time" defaultValue={open} className="w-28" />
+              <Input type="time" value={open} onChange={(e) => setForm((current) => ({ ...current, operatingHours: current.operatingHours.map((hours, i) => i === index ? { ...hours, open: e.target.value } : hours) }))} className="w-28" />
               <span className="text-gray-400 text-sm">to</span>
-              <Input type="time" defaultValue={close} className="w-28" />
+              <Input type="time" value={close} onChange={(e) => setForm((current) => ({ ...current, operatingHours: current.operatingHours.map((hours, i) => i === index ? { ...hours, close: e.target.value } : hours) }))} className="w-28" />
             </div>
           ))}
         </div>
@@ -125,7 +136,7 @@ function GeneralSettings() {
 
       <div className="flex items-center justify-between">
         {saved ? <SavedBanner /> : <span />}
-        <Button type="submit">
+        <Button type="submit" disabled={loading}>
           <Save className="w-4 h-4 mr-2" />
           Save Changes
         </Button>
@@ -137,6 +148,29 @@ function GeneralSettings() {
 /* ── Account ── */
 function AccountSettings() {
   const [saved, setSaved] = useState(false);
+  const [users, setUsers] = useState<SystemUser[]>([]);
+  const [userSaved, setUserSaved] = useState(false);
+
+  useEffect(() => {
+    usersApi.getAll().then(setUsers);
+  }, []);
+
+  const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const created = await usersApi.create({
+      name: form.get('newUserName') as string,
+      email: form.get('newUserEmail') as string,
+      password: form.get('newUserPassword') as string,
+      role: form.get('newUserRole') as string,
+      department: form.get('newUserDepartment') as string,
+      employeeId: form.get('newUserEmployeeId') as string,
+    });
+    setUsers((current) => [...current, created]);
+    e.currentTarget.reset();
+    setUserSaved(true);
+    setTimeout(() => setUserSaved(false), 3000);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,6 +229,70 @@ function AccountSettings() {
             <Label htmlFor="employeeId">Employee ID</Label>
             <Input id="employeeId" defaultValue="EMP-0001" className="mt-1" />
           </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Users">
+        <form onSubmit={handleAddUser} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <Label htmlFor="newUserName">Full Name</Label>
+            <Input id="newUserName" name="newUserName" className="mt-1" required />
+          </div>
+          <div>
+            <Label htmlFor="newUserEmail">Email Address</Label>
+            <Input id="newUserEmail" name="newUserEmail" type="email" className="mt-1" required />
+          </div>
+          <div>
+            <Label htmlFor="newUserPassword">Temporary Password</Label>
+            <Input id="newUserPassword" name="newUserPassword" type="password" className="mt-1" required minLength={6} />
+          </div>
+          <div>
+            <Label htmlFor="newUserRole">Role</Label>
+            <Select name="newUserRole" defaultValue="receptionist">
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="administrator">Administrator</SelectItem>
+                <SelectItem value="doctor">Doctor</SelectItem>
+                <SelectItem value="nurse">Nurse</SelectItem>
+                <SelectItem value="receptionist">Receptionist</SelectItem>
+                <SelectItem value="billing">Billing Staff</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="newUserDepartment">Department</Label>
+            <Input id="newUserDepartment" name="newUserDepartment" className="mt-1" />
+          </div>
+          <div>
+            <Label htmlFor="newUserEmployeeId">Employee ID</Label>
+            <Input id="newUserEmployeeId" name="newUserEmployeeId" className="mt-1" />
+          </div>
+          <div className="md:col-span-2 flex items-center justify-between">
+            {userSaved ? <SavedBanner /> : <span />}
+            <Button type="submit">Add User</Button>
+          </div>
+        </form>
+        <div className="overflow-x-auto border rounded-lg">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-gray-700">Name</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-700">Email</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-700">Role</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-700">Department</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {users.map((account) => (
+                <tr key={account.id}>
+                  <td className="px-4 py-3 font-medium text-gray-900">{account.name}</td>
+                  <td className="px-4 py-3 text-gray-600">{account.email}</td>
+                  <td className="px-4 py-3 text-gray-600">{account.role}</td>
+                  <td className="px-4 py-3 text-gray-600">{account.department || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </SectionCard>
 

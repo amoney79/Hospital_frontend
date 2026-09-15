@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { HeartPulse, MousePointer2 } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { motion } from 'motion/react';
+import { useHospitalSettings } from '../context/HospitalSettingsContext';
 
 function LiveClock() {
   const [now, setNow] = useState(new Date());
@@ -32,6 +33,7 @@ interface IdleSplashScreenProps {
 }
 
 export function IdleSplashScreen({ visible, onDismiss }: IdleSplashScreenProps) {
+  const { settings } = useHospitalSettings();
   useEffect(() => {
     if (!visible) return;
     const handler = (e: KeyboardEvent) => {
@@ -115,9 +117,7 @@ export function IdleSplashScreen({ visible, onDismiss }: IdleSplashScreenProps) 
               transition={{ delay: 0.2 }}
               className="text-center mb-2"
             >
-              <h1 className="text-3xl font-semibold text-white tracking-wide">
-                HealthCare <span className="text-blue-300">MS</span>
-              </h1>
+              <h1 className="text-3xl font-semibold text-white tracking-wide">{settings.hospitalName}</h1>
               <p className="text-blue-200/70 text-sm mt-1 font-light tracking-widest uppercase">
                 Medical Management System
               </p>
@@ -147,7 +147,7 @@ export function IdleSplashScreen({ visible, onDismiss }: IdleSplashScreenProps) 
           {/* Bottom hospital name */}
           <div className="absolute bottom-8 text-center">
             <p className="text-blue-400/40 text-xs tracking-widest uppercase">
-              HealthCare Medical Center · Kilifi, Kenya
+              {settings.hospitalName} · {settings.address}
             </p>
           </div>
         </motion.div>

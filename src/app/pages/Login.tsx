@@ -4,6 +4,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { useAuth } from '../context/AuthContext';
+import { useHospitalSettings } from '../context/HospitalSettingsContext';
 
 const FEATURES = [
   'Complete patient lifecycle management',
@@ -14,6 +15,7 @@ const FEATURES = [
 
 export default function Login() {
   const { login } = useAuth();
+  const { settings } = useHospitalSettings();
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -78,7 +80,7 @@ export default function Login() {
         </div>
 
         <p className="text-blue-400/40 text-xs relative">
-          © {new Date().getFullYear()} HealthCare Medical Center · All rights reserved
+          © {new Date().getFullYear()} {settings.hospitalName} · All rights reserved
         </p>
       </div>
 

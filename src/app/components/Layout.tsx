@@ -18,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { useIdleTimer } from '../hooks/useIdleTimer';
 import { IdleSplashScreen } from './IdleSplashScreen';
 import { SubscriptionBanner } from './SubscriptionBanner';
+import { useHospitalSettings } from '../context/HospitalSettingsContext';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -92,6 +93,7 @@ function SidebarFooter({ pathname, onNav }: { pathname: string; onNav?: () => vo
 
 export function Layout() {
   const location = useLocation();
+  const { settings } = useHospitalSettings();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isIdle, wakeUp } = useIdleTimer();
 
@@ -172,7 +174,7 @@ export function Layout() {
             <div className="flex items-center gap-2 text-gray-500 text-sm">
               <HeartPulse className="w-4 h-4 text-blue-500" />
               <span>
-                &copy; {new Date().getFullYear()} HealthCare Medical Center. All rights reserved.
+                &copy; {new Date().getFullYear()} {settings.hospitalName}. All rights reserved.
               </span>
             </div>
             <div className="flex items-center gap-4 text-xs text-gray-400">
