@@ -146,7 +146,7 @@ function ItemForm({ mode, initial, onSubmit, onCancel }: ItemFormProps) {
           />
         </div>
         <div>
-          <Label htmlFor="unitPrice">Unit Price ($)</Label>
+          <Label htmlFor="unitPrice">Unit Price (Ksh)</Label>
           <Input
             id="unitPrice"
             name="unitPrice"
@@ -319,7 +319,7 @@ export default function Inventory() {
               <div>
                 <p className="text-sm text-gray-600">Total Value</p>
                 <p className="text-2xl font-semibold mt-2 text-green-600">
-                  ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  Ksh {totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-green-50">
@@ -423,7 +423,7 @@ export default function Inventory() {
                         </span>
                         <span className="text-gray-400 text-sm"> / {item.minStockLevel}</span>
                       </td>
-                      <td className="px-6 py-4 text-gray-700">${item.unitPrice.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-gray-700">Ksh {item.unitPrice.toFixed(2)}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{item.expiryDate}</td>
                       <td className="px-6 py-4">
                         <Badge className={statusBadgeClass(item.status)}>
@@ -493,10 +493,10 @@ export default function Inventory() {
                   { label: 'Supplier', value: viewItem.supplier },
                   { label: 'Quantity', value: String(viewItem.quantity) },
                   { label: 'Min Stock Level', value: String(viewItem.minStockLevel) },
-                  { label: 'Unit Price', value: `$${viewItem.unitPrice.toFixed(2)}` },
+                  { label: 'Unit Price', value: `Ksh ${viewItem.unitPrice.toFixed(2)}` },
                   {
                     label: 'Total Value',
-                    value: `$${(viewItem.quantity * viewItem.unitPrice).toFixed(2)}`,
+                    value: `Ksh ${(viewItem.quantity * viewItem.unitPrice).toFixed(2)}`,
                   },
                   { label: 'Expiry Date', value: viewItem.expiryDate },
                   { label: 'Location', value: viewItem.location },

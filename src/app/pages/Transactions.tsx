@@ -145,7 +145,7 @@ export default function Transactions() {
                   <Input id="dueDate" name="dueDate" type="date" required />
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="amount">Amount ($)</Label>
+                  <Label htmlFor="amount">Amount (Ksh)</Label>
                   <Input id="amount" name="amount" type="number" step="0.01" required />
                 </div>
                 <div className="col-span-2">
@@ -172,7 +172,7 @@ export default function Transactions() {
               <div>
                 <p className="text-sm text-gray-600">Total Revenue</p>
                 <p className="text-2xl font-semibold mt-2 text-green-600">
-                  ${totalRevenue.toFixed(2)}
+                  Ksh {totalRevenue.toFixed(2)}
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-green-50">
@@ -188,7 +188,7 @@ export default function Transactions() {
               <div>
                 <p className="text-sm text-gray-600">Pending Payments</p>
                 <p className="text-2xl font-semibold mt-2 text-yellow-600">
-                  ${pendingAmount.toFixed(2)}
+                  Ksh {pendingAmount.toFixed(2)}
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-yellow-50">
@@ -204,7 +204,7 @@ export default function Transactions() {
               <div>
                 <p className="text-sm text-gray-600">Overdue</p>
                 <p className="text-2xl font-semibold mt-2 text-red-600">
-                  ${overdueAmount.toFixed(2)}
+                  Ksh {overdueAmount.toFixed(2)}
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-red-50">
@@ -264,10 +264,10 @@ export default function Transactions() {
                     <td className="px-6 py-4 text-gray-600">{transaction.date}</td>
                     <td className="px-6 py-4 text-gray-600">{transaction.dueDate}</td>
                     <td className="px-6 py-4 font-medium text-gray-900">
-                      ${transaction.amount.toFixed(2)}
+                      Ksh {transaction.amount.toFixed(2)}
                     </td>
                     <td className="px-6 py-4 font-medium text-gray-900">
-                      ${transaction.amountPaid.toFixed(2)}
+                      Ksh {transaction.amountPaid.toFixed(2)}
                     </td>
                     <td className="px-6 py-4">
                       <Badge className={getStatusColor(transaction.status)}>
@@ -349,18 +349,18 @@ export default function Transactions() {
                 </div>
                 <div>
                   <Label>Amount</Label>
-                  <p className="text-lg font-semibold">${selectedTransaction.amount.toFixed(2)}</p>
+                  <p className="text-lg font-semibold">Ksh {selectedTransaction.amount.toFixed(2)}</p>
                 </div>
                 <div>
                   <Label>Amount Paid</Label>
                   <p className="text-lg font-semibold text-green-600">
-                    ${selectedTransaction.amountPaid.toFixed(2)}
+                    Ksh {selectedTransaction.amountPaid.toFixed(2)}
                   </p>
                 </div>
                 <div>
                   <Label>Balance Due</Label>
                   <p className="text-lg font-semibold text-red-600">
-                    ${(selectedTransaction.amount - selectedTransaction.amountPaid).toFixed(2)}
+                    Ksh {(selectedTransaction.amount - selectedTransaction.amountPaid).toFixed(2)}
                   </p>
                 </div>
                 <div className="col-span-2">
@@ -401,22 +401,22 @@ export default function Transactions() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Amount:</span>
-                  <span className="font-medium">${paymentTransaction.amount.toFixed(2)}</span>
+                  <span className="font-medium">Ksh {paymentTransaction.amount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Already Paid:</span>
-                  <span className="font-medium text-green-600">${paymentTransaction.amountPaid.toFixed(2)}</span>
+                  <span className="font-medium text-green-600">Ksh {paymentTransaction.amountPaid.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-t pt-2">
                   <span className="text-gray-900 font-medium">Balance Due:</span>
                   <span className="font-semibold text-red-600">
-                    ${(paymentTransaction.amount - paymentTransaction.amountPaid).toFixed(2)}
+                    Ksh {(paymentTransaction.amount - paymentTransaction.amountPaid).toFixed(2)}
                   </span>
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="paymentAmount">Payment Amount ($)</Label>
+                <Label htmlFor="paymentAmount">Payment Amount (Ksh)</Label>
                 <Input
                   id="paymentAmount"
                   name="paymentAmount"
