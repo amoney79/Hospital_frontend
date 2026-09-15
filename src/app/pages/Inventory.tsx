@@ -243,7 +243,16 @@ export default function Inventory() {
     const newQty = restockItem.quantity + added;
     const updated = await inventoryApi.updateQuantity(restockItem.id, newQty);
     setItems(
-      items.map((i) => (i.id === restockItem.id ? { ...i, quantity: newQty, status: deriveStatus(newQty, i.minStockLevel), ...updated } : i))
+      items.map((item) =>
+        item.id === restockItem.id
+          ? {
+              ...item,
+              ...updated,
+              quantity: newQty,
+              status: deriveStatus(newQty, item.minStockLevel),
+            }
+          : item
+      )
     );
     setRestockItem(null);
     setRestockQty('');

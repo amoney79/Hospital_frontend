@@ -82,12 +82,12 @@ function GeneralSettings() {
           </div>
           <div>
             <Label htmlFor="timezone">Timezone</Label>
-            <Select defaultValue="america-new_york">
+            <Select defaultValue="Kenya-Nairobi">
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="america-new_york">America / New York (EST)</SelectItem>
+                <SelectItem value="Kenya-Nairobi">Kenya/ Nairobi (EST)</SelectItem>
                 <SelectItem value="america-chicago">America / Chicago (CST)</SelectItem>
                 <SelectItem value="america-los_angeles">America / Los Angeles (PST)</SelectItem>
                 <SelectItem value="europe-london">Europe / London (GMT)</SelectItem>
