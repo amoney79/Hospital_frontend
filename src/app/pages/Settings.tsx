@@ -21,6 +21,8 @@ import { Textarea } from '../components/ui/textarea';
 import { Switch } from '../components/ui/switch';
 import { useHospitalSettings } from '../context/HospitalSettingsContext';
 import { HospitalSettings, SystemUser, usersApi } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { normalizeRole } from '../roleAccess';
 
 function SavedBanner() {
   return (
@@ -150,6 +152,7 @@ function GeneralSettings() {
 /* ── Account ── */
 function AccountSettings() {
   const { settings, saveSettings } = useHospitalSettings();
+  const { user, updateUser } = useAuth();
   const [saved, setSaved] = useState(false);
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [userSaved, setUserSaved] = useState(false);
@@ -157,9 +160,23 @@ function AccountSettings() {
   const [userForm, setUserForm] = useState({
     name: '', email: '', password: '', role: '', department: '', employeeId: '',
   });
-  const [account, setAccount] = useState(settings.account);
+  const [account, setAccount] = useState({
+    ...settings.account,
+    firstName: user?.name.split(' ')[0] ?? settings.account.firstName,
+    lastName: user?.name.split(' ').slice(1).join(' ') ?? settings.account.lastName,
+    email: user?.email ?? settings.account.email,
+    role: user?.role ?? settings.account.role,
+    avatarUrl: user?.avatarUrl ?? settings.account.avatarUrl,
+  });
 
-  useEffect(() => setAccount(settings.account), [settings.account]);
+  useEffect(() => setAccount((current) => ({
+    ...settings.account,
+    firstName: user?.name.split(' ')[0] ?? current.firstName,
+    lastName: user?.name.split(' ').slice(1).join(' ') ?? current.lastName,
+    email: user?.email ?? current.email,
+    role: user?.role ?? current.role,
+    avatarUrl: user?.avatarUrl ?? current.avatarUrl,
+  })), [settings.account, user]);
 
   useEffect(() => {
     usersApi.getAll().then(setUsers);
@@ -203,9 +220,19 @@ function AccountSettings() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const name = `${account.firstName} ${account.lastName}`.trim();
+    updateUser({ name, email: account.email, role: account.role, avatarUrl: account.avatarUrl });
     await saveSettings({ ...settings, account });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setAccount((current) => ({ ...current, avatarUrl: String(reader.result) }));
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -213,13 +240,14 @@ function AccountSettings() {
       <SectionCard title="Profile">
         <div className="flex items-center gap-5 mb-6">
           <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-            <User className="w-8 h-8 text-blue-600" />
+            {account.avatarUrl ? <img src={account.avatarUrl} alt={user?.name ?? 'Profile'} className="w-full h-full rounded-full object-cover" /> : <User className="w-8 h-8 text-blue-600" />}
           </div>
           <div>
-            <p className="font-medium text-gray-900">Admin User</p>
-            <p className="text-sm text-gray-500">System Administrator</p>
-            <Button variant="outline" size="sm" className="mt-2">
-              Change Photo
+            <p className="font-medium text-gray-900">{user?.name}</p>
+            <p className="text-sm text-gray-500">{user?.role}</p>
+            <input id="profilePhoto" type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+            <Button asChild variant="outline" size="sm" className="mt-2">
+              <label htmlFor="profilePhoto" className="cursor-pointer">Change Photo</label>
             </Button>
           </div>
         </div>
@@ -444,8 +472,11 @@ const defaultNotifications: NotifRow[] = [
 
 function NotificationSettings() {
   const { settings, saveSettings } = useHospitalSettings();
+  const { user } = useAuth();
   const [rows, setRows] = useState<NotifRow[]>(settings.notifications || defaultNotifications);
   const [saved, setSaved] = useState(false);
+  const role = normalizeRole(user?.role);
+  const canSeeBillingAndStockAlerts = role === 'admin';
 
   useEffect(() => setRows(settings.notifications || defaultNotifications), [settings.notifications]);
 
@@ -458,6 +489,8 @@ function NotificationSettings() {
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
+
+  const visibleRows = rows.filter((row) => canSeeBillingAndStockAlerts || !['low-stock', 'payment-received', 'overdue-invoice'].includes(row.id));
 
   return (
     <div className="space-y-6">
@@ -474,7 +507,7 @@ function NotificationSettings() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {rows.map((row) => (
+                {visibleRows.map((row) => (
                   <tr key={row.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <p className="font-medium text-gray-900">{row.label}</p>
@@ -654,6 +687,9 @@ function SecuritySettings() {
 
 /* ── Root ── */
 export default function Settings() {
+  const { user } = useAuth();
+  const isAdmin = normalizeRole(user?.role) === 'admin';
+
   return (
     <div>
       <div className="mb-8">
@@ -661,12 +697,14 @@ export default function Settings() {
         <p className="text-gray-600 mt-1">Manage system configuration and preferences</p>
       </div>
 
-      <Tabs defaultValue="general">
+      <Tabs defaultValue={isAdmin ? 'general' : 'account'}>
         <TabsList className="mb-6">
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <Building2 className="w-4 h-4" />
-            General
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="general" className="flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              General
+            </TabsTrigger>
+          )}
           <TabsTrigger value="account" className="flex items-center gap-2">
             <User className="w-4 h-4" />
             Account
@@ -681,9 +719,7 @@ export default function Settings() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="general">
-          <GeneralSettings />
-        </TabsContent>
+        {isAdmin && <TabsContent value="general"><GeneralSettings /></TabsContent>}
         <TabsContent value="account">
           <AccountSettings />
         </TabsContent>

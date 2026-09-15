@@ -40,6 +40,7 @@ export interface AccountSettings {
   role: string;
   department: string;
   employeeId: string;
+  avatarUrl?: string;
 }
 
 export interface NotificationSetting {
@@ -65,6 +66,7 @@ export interface SystemUser {
   department?: string;
   employeeId?: string;
   password?: string;
+  avatarUrl?: string;
 }
 
 export const DEFAULT_HOSPITAL_SETTINGS: HospitalSettings = {
@@ -110,6 +112,9 @@ export const DEFAULT_HOSPITAL_SETTINGS: HospitalSettings = {
 const fallbackUsers: SystemUser[] = [
   { id: '1', name: 'Admin User', email: 'admin@healthcare-mc.com', role: 'Administrator', department: 'Administration', employeeId: 'EMP-0001' },
   { id: '2', name: 'Dr. Robert Anderson', email: 'doctor@healthcare-mc.com', role: 'Doctor', department: 'General Medicine', employeeId: 'EMP-0002' },
+  { id: '3', name: 'Nurse User', email: 'nurse@healthcare-mc.com', role: 'Nurse', department: 'Nursing', employeeId: 'EMP-0003' },
+  { id: '4', name: 'Lab Technician', email: 'lab@healthcare-mc.com', role: 'Lab Tech', department: 'Laboratory', employeeId: 'EMP-0004' },
+  { id: '5', name: 'Reception User', email: 'reception@healthcare-mc.com', role: 'Receptionist', department: 'Front Desk', employeeId: 'EMP-0005' },
 ];
 
 function localValue<T>(key: string, fallback: T): T {
@@ -442,17 +447,6 @@ export const authApi = {
     return fetchJson<{ success: boolean; user?: any; token?: string; message?: string }>(
       `${BASE_URL}/auth/login`,
       { method: 'POST', body: JSON.stringify({ email, password }) },
-      {
-        success: true,
-        user: {
-          id: '1',
-          name: 'Dr. Sarah Jenkins',
-          email: 'admin@hospital.com',
-          role: 'Admin',
-          avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150',
-        },
-        token: 'mock-jwt-token',
-      }
     );
   },
 };

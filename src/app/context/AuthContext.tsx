@@ -7,14 +7,17 @@ const REMINDER_DAYS = 5;
 
 const DEMO_USERS = [
   { email: 'admin@healthcare-mc.com', password: 'admin123', name: 'Admin User', role: 'Administrator' },
-  { email: 'admin@hospital.com', password: 'admin', name: 'Dr. Sarah Jenkins', role: 'Admin' },
   { email: 'doctor@healthcare-mc.com', password: 'doctor123', name: 'Dr. Robert Anderson', role: 'Doctor' },
+  { email: 'nurse@healthcare-mc.com', password: 'nurse123', name: 'Nurse User', role: 'Nurse' },
+  { email: 'lab@healthcare-mc.com', password: 'lab123', name: 'Lab Technician', role: 'Lab Tech' },
+  { email: 'reception@healthcare-mc.com', password: 'reception123', name: 'Reception User', role: 'Receptionist' },
 ];
 
 export interface AuthUser {
   name: string;
   email: string;
   role: string;
+  avatarUrl?: string;
 }
 
 interface AuthContextType {
@@ -31,6 +34,7 @@ interface AuthContextType {
 
   login(email: string, password: string): Promise<{ ok: boolean; error?: string }>;
   logout(): void;
+  updateUser(updates: Partial<AuthUser>): void;
   activateSubscription(): void;
 }
 
@@ -74,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: res.user.name,
           email: res.user.email,
           role: res.user.role,
+          avatarUrl: res.user.avatarUrl,
         };
         save('hms_user', userData);
         setUser(userData);
@@ -106,6 +111,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const updateUser = useCallback((updates: Partial<AuthUser>) => {
+    setUser((current) => {
+      if (!current) return current;
+      const next = { ...current, ...updates };
+      save('hms_user', next);
+      return next;
+    });
+  }, []);
+
   const activateSubscription = useCallback(() => {
     const now = new Date().toISOString();
     save('hms_payment_date', now);
@@ -124,13 +138,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     showRenewalReminder,
     login,
     logout,
+    updateUser,
     activateSubscription,
   }), [
     user, trialStart, paymentDate,
     trialDaysRemaining, isTrialExpired,
     hasValidSubscription, subscriptionDaysRemaining,
     isSubscriptionExpired, showRenewalReminder,
-    login, logout, activateSubscription,
+    login, logout, updateUser, activateSubscription,
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

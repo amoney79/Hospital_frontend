@@ -19,6 +19,7 @@ import { useIdleTimer } from '../hooks/useIdleTimer';
 import { IdleSplashScreen } from './IdleSplashScreen';
 import { SubscriptionBanner } from './SubscriptionBanner';
 import { useHospitalSettings } from '../context/HospitalSettingsContext';
+import { canAccess } from '../roleAccess';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -71,8 +72,8 @@ function SidebarFooter({ pathname, onNav }: { pathname: string; onNav?: () => vo
       />
       <div className="mt-3 px-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-            <span className="text-xs font-semibold text-blue-700">{initials}</span>
+          <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0 overflow-hidden">
+            {user?.avatarUrl ? <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" /> : <span className="text-xs font-semibold text-blue-700">{initials}</span>}
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">{user?.name ?? 'User'}</p>
@@ -94,6 +95,7 @@ function SidebarFooter({ pathname, onNav }: { pathname: string; onNav?: () => vo
 export function Layout() {
   const location = useLocation();
   const { settings } = useHospitalSettings();
+  const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isIdle, wakeUp } = useIdleTimer();
 
@@ -114,7 +116,7 @@ export function Layout() {
             </button>
           </div>
           <nav className="flex-1 mt-6 px-4 overflow-y-auto">
-            {navigation.map((item) => (
+            {navigation.filter((item) => canAccess(user?.role, item.href)).map((item) => (
               <NavLink
                 key={item.name}
                 item={item}
@@ -135,7 +137,7 @@ export function Layout() {
             <h1 className="text-2xl font-semibold text-blue-600">HealthCare MS</h1>
           </div>
           <nav className="flex-1 px-4 py-6 overflow-y-auto">
-            {navigation.map((item) => (
+            {navigation.filter((item) => canAccess(user?.role, item.href)).map((item) => (
               <NavLink
                 key={item.name}
                 item={item}
