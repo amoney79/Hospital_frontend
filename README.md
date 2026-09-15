@@ -1,7 +1,7 @@
 
   # Hospital Management System
 
-  This is a code bundle for Hospital Management System. The original project is available at https://www.figma.com/design/lXkxGOtH6ng26bfMI4WN6p/Hospital-Management-System.
+  This is a code bundle for Hospital Management System. The original project is available at https://github.com/amoney79/Hospital_frontend
 
   ## Running the code
 
