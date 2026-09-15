@@ -221,7 +221,9 @@ function AccountSettings() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const name = `${account.firstName} ${account.lastName}`.trim();
-    updateUser({ name, email: account.email, role: account.role, avatarUrl: account.avatarUrl });
+    const profile = { name, email: account.email, role: account.role, avatarUrl: account.avatarUrl };
+    updateUser(profile);
+    if (user?.id) await usersApi.update(user.id, profile);
     await saveSettings({ ...settings, account });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);

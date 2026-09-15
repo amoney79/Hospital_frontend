@@ -6,14 +6,15 @@ const SUB_DAYS = 30;
 const REMINDER_DAYS = 5;
 
 const DEMO_USERS = [
-  { email: 'admin@healthcare-mc.com', password: 'admin123', name: 'Admin User', role: 'Administrator' },
-  { email: 'doctor@healthcare-mc.com', password: 'doctor123', name: 'Dr. Robert Anderson', role: 'Doctor' },
-  { email: 'nurse@healthcare-mc.com', password: 'nurse123', name: 'Nurse User', role: 'Nurse' },
-  { email: 'lab@healthcare-mc.com', password: 'lab123', name: 'Lab Technician', role: 'Lab Tech' },
-  { email: 'reception@healthcare-mc.com', password: 'reception123', name: 'Reception User', role: 'Receptionist' },
+  { id: '1', email: 'admin@healthcare-mc.com', password: 'admin123', name: 'Admin User', role: 'Administrator' },
+  { id: '2', email: 'doctor@healthcare-mc.com', password: 'doctor123', name: 'Dr. Robert Anderson', role: 'Doctor' },
+  { id: '3', email: 'nurse@healthcare-mc.com', password: 'nurse123', name: 'Nurse User', role: 'Nurse' },
+  { id: '4', email: 'lab@healthcare-mc.com', password: 'lab123', name: 'Lab Technician', role: 'Lab Tech' },
+  { id: '5', email: 'reception@healthcare-mc.com', password: 'reception123', name: 'Reception User', role: 'Receptionist' },
 ];
 
 export interface AuthUser {
+  id?: string;
   name: string;
   email: string;
   role: string;
