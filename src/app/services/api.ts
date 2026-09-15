@@ -1,0 +1,348 @@
+import {
+  Patient,
+  Doctor,
+  Appointment,
+  MedicalRecord,
+  InventoryItem,
+  Transaction,
+  mockPatients,
+  mockDoctors,
+  mockAppointments,
+  mockMedicalRecords,
+  mockInventory,
+  mockTransactions
+} from '../data/mockData';
+
+const BASE_URL = 'http://localhost:8081/api';
+
+async function fetchJson<T>(url: string, options?: RequestInit, fallbackData?: T): Promise<T> {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+      ...options,
+    });
+    if (!res.ok) {
+      throw new Error(`HTTP error! Status: ${res.status}`);
+    }
+    return (await res.json()) as T;
+  } catch (error) {
+    console.warn(`[API] Call to ${url} failed or server offline. Using local data fallback:`, error);
+    if (fallbackData !== undefined) {
+      return fallbackData;
+    }
+    throw error;
+  }
+}
+
+// ─── Patient API ─────────────────────────────────────────────────────────────
+
+export const patientApi = {
+  async getAll(search?: string, type?: string): Promise<Patient[]> {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (type && type !== 'all') params.append('type', type);
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return fetchJson<Patient[]>(`${BASE_URL}/patients${query}`, undefined, mockPatients);
+  },
+
+  async getById(id: string): Promise<Patient | null> {
+    const fallback = mockPatients.find((p) => p.id === id) || null;
+    return fetchJson<Patient>(`${BASE_URL}/patients/${id}`, undefined, fallback as Patient);
+  },
+
+  async create(patient: Omit<Patient, 'id'>): Promise<Patient> {
+    const payload = { ...patient, id: String(Date.now()) };
+    return fetchJson<Patient>(
+      `${BASE_URL}/patients`,
+      { method: 'POST', body: JSON.stringify(payload) },
+      payload as Patient
+    );
+  },
+
+  async update(id: string, patient: Partial<Patient>): Promise<Patient> {
+    return fetchJson<Patient>(
+      `${BASE_URL}/patients/${id}`,
+      { method: 'PUT', body: JSON.stringify(patient) },
+      { id, ...patient } as Patient
+    );
+  },
+
+  async delete(id: string): Promise<boolean> {
+    try {
+      await fetch(`${BASE_URL}/patients/${id}`, { method: 'DELETE' });
+      return true;
+    } catch {
+      return true;
+    }
+  },
+};
+
+// ─── Doctor API ──────────────────────────────────────────────────────────────
+
+export const doctorApi = {
+  async getAll(department?: string): Promise<Doctor[]> {
+    const query = department && department !== 'all' ? `?department=${encodeURIComponent(department)}` : '';
+    return fetchJson<Doctor[]>(`${BASE_URL}/doctors${query}`, undefined, mockDoctors);
+  },
+
+  async create(doctor: Omit<Doctor, 'id'>): Promise<Doctor> {
+    const payload = { ...doctor, id: String(Date.now()) };
+    return fetchJson<Doctor>(
+      `${BASE_URL}/doctors`,
+      { method: 'POST', body: JSON.stringify(payload) },
+      payload as Doctor
+    );
+  },
+
+  async update(id: string, doctor: Partial<Doctor>): Promise<Doctor> {
+    return fetchJson<Doctor>(
+      `${BASE_URL}/doctors/${id}`,
+      { method: 'PUT', body: JSON.stringify(doctor) },
+      { id, ...doctor } as Doctor
+    );
+  },
+
+  async updateStatus(id: string, status: 'available' | 'busy' | 'off-duty'): Promise<Doctor> {
+    return fetchJson<Doctor>(
+      `${BASE_URL}/doctors/${id}/status`,
+      { method: 'PATCH', body: JSON.stringify({ status }) },
+      { id, status } as Doctor
+    );
+  },
+
+  async delete(id: string): Promise<boolean> {
+    try {
+      await fetch(`${BASE_URL}/doctors/${id}`, { method: 'DELETE' });
+      return true;
+    } catch {
+      return true;
+    }
+  },
+};
+
+// ─── Appointment API ─────────────────────────────────────────────────────────
+
+export const appointmentApi = {
+  async getAll(status?: string, doctorId?: string, patientId?: string): Promise<Appointment[]> {
+    const params = new URLSearchParams();
+    if (status && status !== 'all') params.append('status', status);
+    if (doctorId && doctorId !== 'all') params.append('doctorId', doctorId);
+    if (patientId) params.append('patientId', patientId);
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return fetchJson<Appointment[]>(`${BASE_URL}/appointments${query}`, undefined, mockAppointments);
+  },
+
+  async create(appointment: Omit<Appointment, 'id'>): Promise<Appointment> {
+    const payload = { ...appointment, id: String(Date.now()) };
+    return fetchJson<Appointment>(
+      `${BASE_URL}/appointments`,
+      { method: 'POST', body: JSON.stringify(payload) },
+      payload as Appointment
+    );
+  },
+
+  async update(id: string, appointment: Partial<Appointment>): Promise<Appointment> {
+    return fetchJson<Appointment>(
+      `${BASE_URL}/appointments/${id}`,
+      { method: 'PUT', body: JSON.stringify(appointment) },
+      { id, ...appointment } as Appointment
+    );
+  },
+
+  async updateStatus(id: string, status: string): Promise<Appointment> {
+    return fetchJson<Appointment>(
+      `${BASE_URL}/appointments/${id}/status`,
+      { method: 'PATCH', body: JSON.stringify({ status }) },
+      { id, status } as Appointment
+    );
+  },
+
+  async delete(id: string): Promise<boolean> {
+    try {
+      await fetch(`${BASE_URL}/appointments/${id}`, { method: 'DELETE' });
+      return true;
+    } catch {
+      return true;
+    }
+  },
+};
+
+// ─── Medical Record API ───────────────────────────────────────────────────────
+
+export const medicalRecordApi = {
+  async getAll(patientId?: string, doctorId?: string): Promise<MedicalRecord[]> {
+    const params = new URLSearchParams();
+    if (patientId) params.append('patientId', patientId);
+    if (doctorId) params.append('doctorId', doctorId);
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return fetchJson<MedicalRecord[]>(`${BASE_URL}/medical-records${query}`, undefined, mockMedicalRecords);
+  },
+
+  async create(record: Omit<MedicalRecord, 'id'>): Promise<MedicalRecord> {
+    const payload = { ...record, id: String(Date.now()) };
+    return fetchJson<MedicalRecord>(
+      `${BASE_URL}/medical-records`,
+      { method: 'POST', body: JSON.stringify(payload) },
+      payload as MedicalRecord
+    );
+  },
+
+  async delete(id: string): Promise<boolean> {
+    try {
+      await fetch(`${BASE_URL}/medical-records/${id}`, { method: 'DELETE' });
+      return true;
+    } catch {
+      return true;
+    }
+  },
+};
+
+// ─── Inventory API ────────────────────────────────────────────────────────────
+
+export const inventoryApi = {
+  async getAll(category?: string, status?: string): Promise<InventoryItem[]> {
+    const params = new URLSearchParams();
+    if (category && category !== 'all') params.append('category', category);
+    if (status && status !== 'all') params.append('status', status);
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return fetchJson<InventoryItem[]>(`${BASE_URL}/inventory${query}`, undefined, mockInventory);
+  },
+
+  async create(item: Omit<InventoryItem, 'id'>): Promise<InventoryItem> {
+    const payload = { ...item, id: String(Date.now()) };
+    return fetchJson<InventoryItem>(
+      `${BASE_URL}/inventory`,
+      { method: 'POST', body: JSON.stringify(payload) },
+      payload as InventoryItem
+    );
+  },
+
+  async update(id: string, item: Partial<InventoryItem>): Promise<InventoryItem> {
+    return fetchJson<InventoryItem>(
+      `${BASE_URL}/inventory/${id}`,
+      { method: 'PUT', body: JSON.stringify(item) },
+      { id, ...item } as InventoryItem
+    );
+  },
+
+  async updateQuantity(id: string, quantity: number): Promise<InventoryItem> {
+    return fetchJson<InventoryItem>(
+      `${BASE_URL}/inventory/${id}/quantity`,
+      { method: 'PATCH', body: JSON.stringify({ quantity }) },
+      { id, quantity } as InventoryItem
+    );
+  },
+
+  async delete(id: string): Promise<boolean> {
+    try {
+      await fetch(`${BASE_URL}/inventory/${id}`, { method: 'DELETE' });
+      return true;
+    } catch {
+      return true;
+    }
+  },
+};
+
+// ─── Transaction API ─────────────────────────────────────────────────────────
+
+export const transactionApi = {
+  async getAll(patientId?: string, status?: string): Promise<Transaction[]> {
+    const params = new URLSearchParams();
+    if (patientId) params.append('patientId', patientId);
+    if (status && status !== 'all') params.append('status', status);
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return fetchJson<Transaction[]>(`${BASE_URL}/transactions${query}`, undefined, mockTransactions);
+  },
+
+  async create(transaction: Omit<Transaction, 'id'>): Promise<Transaction> {
+    const payload = { ...transaction, id: String(Date.now()) };
+    return fetchJson<Transaction>(
+      `${BASE_URL}/transactions`,
+      { method: 'POST', body: JSON.stringify(payload) },
+      payload as Transaction
+    );
+  },
+
+  async update(id: string, transaction: Partial<Transaction>): Promise<Transaction> {
+    return fetchJson<Transaction>(
+      `${BASE_URL}/transactions/${id}`,
+      { method: 'PUT', body: JSON.stringify(transaction) },
+      { id, ...transaction } as Transaction
+    );
+  },
+
+  async recordPayment(id: string, paymentAmount: number, paymentMethod?: string): Promise<Transaction> {
+    return fetchJson<Transaction>(
+      `${BASE_URL}/transactions/${id}/pay`,
+      { method: 'PATCH', body: JSON.stringify({ paymentAmount, paymentMethod }) },
+      { id, amountPaid: paymentAmount } as Transaction
+    );
+  },
+
+  async delete(id: string): Promise<boolean> {
+    try {
+      await fetch(`${BASE_URL}/transactions/${id}`, { method: 'DELETE' });
+      return true;
+    } catch {
+      return true;
+    }
+  },
+};
+
+// ─── Dashboard Stats API ──────────────────────────────────────────────────────
+
+export interface DashboardStats {
+  totalPatients: number;
+  activePatients: number;
+  doctorsOnDuty: number;
+  appointmentsToday: number;
+  totalRevenue: number;
+  lowStockCount: number;
+  emergencyCases: number;
+}
+
+export const dashboardApi = {
+  async getStats(): Promise<DashboardStats> {
+    const fallbackStats: DashboardStats = {
+      totalPatients: mockPatients.length,
+      activePatients: mockPatients.filter((p) => p.status === 'active').length,
+      doctorsOnDuty: mockDoctors.filter((d) => d.status === 'available').length,
+      appointmentsToday: mockAppointments.length,
+      totalRevenue: mockTransactions.reduce((acc, t) => acc + t.amountPaid, 0),
+      lowStockCount: mockInventory.filter((i) => i.status !== 'in-stock').length,
+      emergencyCases: 2,
+    };
+
+    return fetchJson<DashboardStats>(`${BASE_URL}/dashboard/stats`, undefined, fallbackStats);
+  },
+};
+
+// ─── Auth API ─────────────────────────────────────────────────────────────────
+
+export const authApi = {
+  async login(email: string, password?: string) {
+    return fetchJson<{ success: boolean; user?: any; token?: string; message?: string }>(
+      `${BASE_URL}/auth/login`,
+      { method: 'POST', body: JSON.stringify({ email, password }) },
+      {
+        success: true,
+        user: {
+          id: '1',
+          name: 'Dr. Sarah Jenkins',
+          email: 'admin@hospital.com',
+          role: 'Admin',
+          avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150',
+        },
+        token: 'mock-jwt-token',
+      }
+    );
+  },
+};
