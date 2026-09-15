@@ -8,6 +8,8 @@ import {
   Eye,
   EyeOff,
   Check,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -147,33 +149,61 @@ function GeneralSettings() {
 
 /* ── Account ── */
 function AccountSettings() {
+  const { settings, saveSettings } = useHospitalSettings();
   const [saved, setSaved] = useState(false);
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [userSaved, setUserSaved] = useState(false);
+  const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
+  const [userForm, setUserForm] = useState({
+    name: '', email: '', password: '', role: '', department: '', employeeId: '',
+  });
+  const [account, setAccount] = useState(settings.account);
+
+  useEffect(() => setAccount(settings.account), [settings.account]);
 
   useEffect(() => {
     usersApi.getAll().then(setUsers);
   }, []);
 
-  const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const created = await usersApi.create({
-      name: form.get('newUserName') as string,
-      email: form.get('newUserEmail') as string,
-      password: form.get('newUserPassword') as string,
-      role: form.get('newUserRole') as string,
-      department: form.get('newUserDepartment') as string,
-      employeeId: form.get('newUserEmployeeId') as string,
-    });
-    setUsers((current) => [...current, created]);
-    e.currentTarget.reset();
+  const resetUserForm = () => {
+    setEditingUser(null);
+    setUserForm({ name: '', email: '', password: '', role: 'receptionist', department: '', employeeId: '' });
+  };
+
+  const handleSaveUser = async () => {
+    const payload = {
+      name: userForm.name,
+      email: userForm.email,
+      ...(userForm.password ? { password: userForm.password } : {}),
+      role: userForm.role,
+      department: userForm.department,
+      employeeId: userForm.employeeId,
+    };
+    const savedUser = editingUser
+      ? await usersApi.update(editingUser.id, payload)
+      : await usersApi.create({ ...payload, password: userForm.password });
+    setUsers((current) => editingUser
+      ? current.map((account) => account.id === editingUser.id ? { ...account, ...savedUser } : account)
+      : [...current, savedUser]);
+    resetUserForm();
     setUserSaved(true);
     setTimeout(() => setUserSaved(false), 3000);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const editUser = (account: SystemUser) => {
+    setEditingUser(account);
+    setUserForm({ name: account.name, email: account.email, password: '', role: account.role, department: account.department ?? '', employeeId: account.employeeId ?? '' });
+  };
+
+  const deleteUser = async (id: string) => {
+    await usersApi.delete(id);
+    setUsers((current) => current.filter((account) => account.id !== id));
+    if (editingUser?.id === id) resetUserForm();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await saveSettings({ ...settings, account });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -196,19 +226,19 @@ function AccountSettings() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="firstName">First Name</Label>
-            <Input id="firstName" defaultValue="Admin" className="mt-1" />
+            <Input id="firstName" value={account.firstName} onChange={(e) => setAccount({ ...account, firstName: e.target.value })} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="lastName">Last Name</Label>
-            <Input id="lastName" defaultValue="User" className="mt-1" />
+            <Input id="lastName" value={account.lastName} onChange={(e) => setAccount({ ...account, lastName: e.target.value })} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="accountEmail">Email Address</Label>
-            <Input id="accountEmail" type="email" defaultValue="admin@healthcare-mc.com" className="mt-1" />
+            <Input id="accountEmail" type="email" value={account.email} onChange={(e) => setAccount({ ...account, email: e.target.value })} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="role">Role</Label>
-            <Select defaultValue="administrator">
+            <Select value={account.role} onValueChange={(role) => setAccount({ ...account, role })}>
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
@@ -223,32 +253,32 @@ function AccountSettings() {
           </div>
           <div>
             <Label htmlFor="department">Department</Label>
-            <Input id="department" defaultValue="Administration" className="mt-1" />
+            <Input id="department" value={account.department} onChange={(e) => setAccount({ ...account, department: e.target.value })} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="employeeId">Employee ID</Label>
-            <Input id="employeeId" defaultValue="EMP-0001" className="mt-1" />
+            <Input id="employeeId" value={account.employeeId} onChange={(e) => setAccount({ ...account, employeeId: e.target.value })} className="mt-1" />
           </div>
         </div>
       </SectionCard>
 
       <SectionCard title="Users">
-        <form onSubmit={handleAddUser} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
             <Label htmlFor="newUserName">Full Name</Label>
-            <Input id="newUserName" name="newUserName" className="mt-1" required />
+            <Input id="newUserName" value={userForm.name} onChange={(e) => setUserForm({ ...userForm, name: e.target.value })} className="mt-1" required />
           </div>
           <div>
             <Label htmlFor="newUserEmail">Email Address</Label>
-            <Input id="newUserEmail" name="newUserEmail" type="email" className="mt-1" required />
+            <Input id="newUserEmail" value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} type="email" className="mt-1" required />
           </div>
           <div>
             <Label htmlFor="newUserPassword">Temporary Password</Label>
-            <Input id="newUserPassword" name="newUserPassword" type="password" className="mt-1" required minLength={6} />
+            <Input id="newUserPassword" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} type="password" className="mt-1" required={!editingUser} minLength={editingUser ? undefined : 6} />
           </div>
           <div>
             <Label htmlFor="newUserRole">Role</Label>
-            <Select name="newUserRole" defaultValue="receptionist">
+            <Select value={userForm.role} onValueChange={(role) => setUserForm({ ...userForm, role })}>
               <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="administrator">Administrator</SelectItem>
@@ -261,17 +291,20 @@ function AccountSettings() {
           </div>
           <div>
             <Label htmlFor="newUserDepartment">Department</Label>
-            <Input id="newUserDepartment" name="newUserDepartment" className="mt-1" />
+            <Input id="newUserDepartment" value={userForm.department} onChange={(e) => setUserForm({ ...userForm, department: e.target.value })} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="newUserEmployeeId">Employee ID</Label>
-            <Input id="newUserEmployeeId" name="newUserEmployeeId" className="mt-1" />
+            <Input id="newUserEmployeeId" value={userForm.employeeId} onChange={(e) => setUserForm({ ...userForm, employeeId: e.target.value })} className="mt-1" />
           </div>
           <div className="md:col-span-2 flex items-center justify-between">
             {userSaved ? <SavedBanner /> : <span />}
-            <Button type="submit">Add User</Button>
+            <div className="flex gap-2">
+              <Button type="button" onClick={handleSaveUser}>{editingUser ? 'Update User' : 'Add User'}</Button>
+              {editingUser && <Button type="button" variant="outline" onClick={resetUserForm}>Cancel</Button>}
+            </div>
           </div>
-        </form>
+        </div>
         <div className="overflow-x-auto border rounded-lg">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
@@ -280,6 +313,7 @@ function AccountSettings() {
                 <th className="px-4 py-3 text-left font-medium text-gray-700">Email</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-700">Role</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-700">Department</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -289,6 +323,14 @@ function AccountSettings() {
                   <td className="px-4 py-3 text-gray-600">{account.email}</td>
                   <td className="px-4 py-3 text-gray-600">{account.role}</td>
                   <td className="px-4 py-3 text-gray-600">{account.department || '—'}</td>
+                  <td className="px-4 py-3 text-right">
+                    <Button type="button" variant="ghost" size="sm" title="Edit user" onClick={() => editUser(account)}>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" title="Delete user" className="text-red-600 hover:text-red-700" onClick={() => deleteUser(account.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -300,7 +342,7 @@ function AccountSettings() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>Language</Label>
-            <Select defaultValue="en">
+            <Select value={account.language} onValueChange={(language) => setAccount({ ...account, language })}>
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
@@ -314,7 +356,7 @@ function AccountSettings() {
           </div>
           <div>
             <Label>Date Format</Label>
-            <Select defaultValue="yyyy-mm-dd">
+            <Select value={account.dateFormat} onValueChange={(dateFormat) => setAccount({ ...account, dateFormat })}>
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
@@ -401,14 +443,18 @@ const defaultNotifications: NotifRow[] = [
 ];
 
 function NotificationSettings() {
-  const [rows, setRows] = useState<NotifRow[]>(defaultNotifications);
+  const { settings, saveSettings } = useHospitalSettings();
+  const [rows, setRows] = useState<NotifRow[]>(settings.notifications || defaultNotifications);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => setRows(settings.notifications || defaultNotifications), [settings.notifications]);
 
   const toggle = (id: string, channel: 'email' | 'sms' | 'inApp') => {
     setRows(rows.map((r) => (r.id === id ? { ...r, [channel]: !r[channel] } : r)));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    await saveSettings({ ...settings, notifications: rows });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -473,13 +519,24 @@ function NotificationSettings() {
 
 /* ── Security ── */
 function SecuritySettings() {
+  const { settings, saveSettings } = useHospitalSettings();
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [security, setSecurity] = useState(settings.security);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  useEffect(() => setSecurity(settings.security), [settings.security]);
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await saveSettings({ ...settings, security });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleSecuritySave = async () => {
+    await saveSettings({ ...settings, security });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -537,20 +594,30 @@ function SecuritySettings() {
               description: 'Send an email whenever your account is accessed from a new device',
               defaultChecked: true,
             },
-          ].map(({ label, description, defaultChecked }) => {
-            const [on, setOn] = useState(defaultChecked);
+          ].map(({ label, description, defaultChecked }, index) => {
+            const keys = ['autoLogout', 'twoFactorAuthentication', 'loginActivityAlerts'] as const;
+            const key = keys[index];
+            const on = security[key] ?? defaultChecked;
             return (
               <div key={label} className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-medium text-gray-900 text-sm">{label}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{description}</p>
                 </div>
-                <Switch checked={on} onCheckedChange={setOn} />
+                <Switch checked={on} onCheckedChange={(value) => setSecurity({ ...security, [key]: value })} />
               </div>
             );
           })}
         </div>
       </SectionCard>
+
+      <div className="flex items-center justify-between">
+        {saved ? <SavedBanner /> : <span />}
+        <Button onClick={handleSecuritySave}>
+          <Save className="w-4 h-4 mr-2" />
+          Save Security Settings
+        </Button>
+      </div>
 
       <SectionCard title="Active Sessions">
         <div className="space-y-3">

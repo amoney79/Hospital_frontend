@@ -26,6 +26,35 @@ export interface HospitalSettings {
   timezone: string;
   description: string;
   operatingHours: { day: string; open: string; close: string }[];
+  account: AccountSettings;
+  notifications: NotificationSetting[];
+  security: SecuritySettings;
+}
+
+export interface AccountSettings {
+  language: string;
+  dateFormat: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  department: string;
+  employeeId: string;
+}
+
+export interface NotificationSetting {
+  id: string;
+  label: string;
+  description: string;
+  email: boolean;
+  sms: boolean;
+  inApp: boolean;
+}
+
+export interface SecuritySettings {
+  autoLogout: boolean;
+  twoFactorAuthentication: boolean;
+  loginActivityAlerts: boolean;
 }
 
 export interface SystemUser {
@@ -53,6 +82,29 @@ export const DEFAULT_HOSPITAL_SETTINGS: HospitalSettings = {
     { day: 'Saturday', open: '09:00', close: '17:00' },
     { day: 'Sunday', open: '10:00', close: '14:00' },
   ],
+  account: {
+    language: 'en',
+    dateFormat: 'yyyy-mm-dd',
+    firstName: 'Admin',
+    lastName: 'User',
+    email: 'admin@healthcare-mc.com',
+    role: 'administrator',
+    department: 'Administration',
+    employeeId: 'EMP-0001',
+  },
+  notifications: [
+    { id: 'new-appointment', label: 'New Appointment', description: 'When a new appointment is booked', email: true, sms: false, inApp: true },
+    { id: 'appointment-reminder', label: 'Appointment Reminder', description: '24 hours before a scheduled appointment', email: true, sms: true, inApp: true },
+    { id: 'low-stock', label: 'Low Stock Alert', description: 'When inventory falls below minimum level', email: true, sms: false, inApp: true },
+    { id: 'payment-received', label: 'Payment Received', description: 'When a patient completes a payment', email: false, sms: false, inApp: true },
+    { id: 'overdue-invoice', label: 'Overdue Invoice', description: 'When an invoice passes its due date', email: true, sms: false, inApp: true },
+    { id: 'new-patient', label: 'New Patient Registered', description: 'When a new patient record is created', email: false, sms: false, inApp: true },
+  ],
+  security: {
+    autoLogout: true,
+    twoFactorAuthentication: false,
+    loginActivityAlerts: true,
+  },
 };
 
 const fallbackUsers: SystemUser[] = [
@@ -438,5 +490,27 @@ export const usersApi = {
     const users = localValue<SystemUser[]>('hms_users', fallbackUsers);
     setLocalValue('hms_users', [...users, created]);
     return created;
+  },
+
+  async update(id: string, user: Partial<SystemUser>): Promise<SystemUser> {
+    const updated = await fetchJson<SystemUser>(
+      `${BASE_URL}/users/${id}`,
+      { method: 'PUT', body: JSON.stringify(user) },
+      { id, ...user } as SystemUser
+    );
+    const users = localValue<SystemUser[]>('hms_users', fallbackUsers);
+    setLocalValue('hms_users', users.map((account) => account.id === id ? { ...account, ...updated } : account));
+    return updated;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    try {
+      await fetch(`${BASE_URL}/users/${id}`, { method: 'DELETE' });
+    } catch {
+      // Keep the local fallback usable when the API is offline.
+    }
+    const users = localValue<SystemUser[]>('hms_users', fallbackUsers);
+    setLocalValue('hms_users', users.filter((account) => account.id !== id));
+    return true;
   },
 };
