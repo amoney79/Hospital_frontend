@@ -88,19 +88,39 @@ export interface Report {
   revenueBank: number;
   expenditure: number;
   surplus: number;
+  comments?: string;
+  generatedAt?: string;
 }
 
 export interface Staff {
   id: string;
   name: string;
+  dob: string;
+  gender: string;
+  nationalId: string;
   role: string;
   department: string;
   phone: string;
   email: string;
+  address: string;
+  emergencyContact: string;
+  jobTitle: string;
+  employmentType: string;
+  hireDate: string;
+  employmentStatus: string;
+  shiftSchedule: string;
   education: string;
   certifications: string[];
+  training: string;
+  skills: string[];
+  languages: string[];
+  licenseNumber?: string;
+  backgroundCheck: string;
+  medicalClearance?: string;
+  immunizationRecords?: string;
+  workPermit?: string;
   experience: number;
-  status: 'active' | 'probation' | 'retired';
+  status: 'active' | 'probation' | 'retired' | 'terminated';
 }
 
 const fallbackReports: Report[] = [
@@ -109,8 +129,8 @@ const fallbackReports: Report[] = [
 ];
 
 const fallbackStaff: Staff[] = [
-  { id: 's-1', name: 'Dr. Robert Anderson', role: 'Doctor', department: 'General Medicine', phone: '+254 700 000 001', email: 'doctor@healthcare-mc.com', education: 'MBChB', certifications: ['Medical License'], experience: 8, status: 'active' },
-  { id: 's-2', name: 'Nurse User', role: 'Nurse', department: 'Nursing', phone: '+254 700 000 002', email: 'nurse@healthcare-mc.com', education: 'BSc Nursing', certifications: ['NCK'], experience: 5, status: 'active' },
+  { id: 's-1', name: 'Dr. Robert Anderson', dob: '1985-04-12', gender: 'Male', nationalId: 'ID-001', role: 'Doctor', department: 'General Medicine', phone: '+254 700 000 001', email: 'doctor@healthcare-mc.com', address: 'Kilifi, Kenya', emergencyContact: '+254 711 000 001', jobTitle: 'Medical Doctor', employmentType: 'Full-time', hireDate: '2018-01-10', employmentStatus: 'Permanent', shiftSchedule: 'Day', education: 'MBChB', certifications: ['Medical License'], training: 'CPR', skills: ['Diagnosis'], languages: ['English', 'Swahili'], licenseNumber: 'MED-001', backgroundCheck: 'Cleared', experience: 8, status: 'active' },
+  { id: 's-2', name: 'Nurse User', dob: '1990-08-20', gender: 'Female', nationalId: 'ID-002', role: 'Nurse', department: 'Nursing', phone: '+254 700 000 002', email: 'nurse@healthcare-mc.com', address: 'Kilifi, Kenya', emergencyContact: '+254 711 000 002', jobTitle: 'Registered Nurse', employmentType: 'Full-time', hireDate: '2021-05-03', employmentStatus: 'Permanent', shiftSchedule: 'Rotating', education: 'BSc Nursing', certifications: ['NCK'], training: 'First Aid', skills: ['Patient care'], languages: ['English', 'Swahili'], backgroundCheck: 'Cleared', experience: 5, status: 'active' },
 ];
 
 export const DEFAULT_HOSPITAL_SETTINGS: HospitalSettings = {
@@ -487,6 +507,12 @@ export const dashboardApi = {
 export const reportApi = {
   async getAll(): Promise<Report[]> {
     return fetchJson<Report[]>(`${BASE_URL}/reports`, undefined, localValue('hms_reports', fallbackReports));
+  },
+  async create(report: Omit<Report, 'id'>): Promise<Report> {
+    const payload = { ...report, id: String(Date.now()) };
+    const created = await fetchJson<Report>(`${BASE_URL}/reports`, { method: 'POST', body: JSON.stringify(payload) }, payload);
+    setLocalValue('hms_reports', [...localValue<Report[]>('hms_reports', fallbackReports), created]);
+    return created;
   },
 };
 
