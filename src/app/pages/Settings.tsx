@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../components/ui/textarea';
 import { Switch } from '../components/ui/switch';
 import { useHospitalSettings } from '../context/HospitalSettingsContext';
-import { HospitalSettings, SystemUser, usersApi } from '../services/api';
+import { HospitalSettings, SystemUser, UserSession, securityApi, usersApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { normalizeRole } from '../roleAccess';
 
@@ -153,6 +153,7 @@ function GeneralSettings() {
 function AccountSettings() {
   const { settings, saveSettings } = useHospitalSettings();
   const { user, updateUser } = useAuth();
+  const isAdmin = normalizeRole(user?.role) === 'admin';
   const [saved, setSaved] = useState(false);
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [userSaved, setUserSaved] = useState(false);
@@ -179,12 +180,12 @@ function AccountSettings() {
   })), [settings.account, user]);
 
   useEffect(() => {
-    usersApi.getAll().then(setUsers);
-  }, []);
+    if (isAdmin) usersApi.getAll().then(setUsers);
+  }, [isAdmin]);
 
   const resetUserForm = () => {
     setEditingUser(null);
-    setUserForm({ name: '', email: '', password: '', role: 'receptionist', department: '', employeeId: '' });
+    setUserForm({ name: '', email: '', password: '', role: '', department: '', employeeId: '' });
   };
 
   const handleSaveUser = async () => {
@@ -268,7 +269,7 @@ function AccountSettings() {
           </div>
           <div>
             <Label htmlFor="role">Role</Label>
-            <Select value={account.role} onValueChange={(role) => setAccount({ ...account, role })}>
+            <Select value={account.role} disabled>
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
@@ -277,7 +278,7 @@ function AccountSettings() {
                 <SelectItem value="doctor">Doctor</SelectItem>
                 <SelectItem value="nurse">Nurse</SelectItem>
                 <SelectItem value="receptionist">Receptionist</SelectItem>
-                <SelectItem value="billing">Billing Staff</SelectItem>
+                <SelectItem value="laboratory">Lab Technician</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -292,7 +293,7 @@ function AccountSettings() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Users">
+      {isAdmin && <SectionCard title="Users">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
             <Label htmlFor="newUserName">Full Name</Label>
@@ -303,7 +304,7 @@ function AccountSettings() {
             <Input id="newUserEmail" value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} type="email" className="mt-1" required />
           </div>
           <div>
-            <Label htmlFor="newUserPassword">Temporary Password</Label>
+            <Label htmlFor="newUserPassword">Password</Label>
             <Input id="newUserPassword" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} type="password" className="mt-1" required={!editingUser} minLength={editingUser ? undefined : 6} />
           </div>
           <div>
@@ -315,7 +316,7 @@ function AccountSettings() {
                 <SelectItem value="doctor">Doctor</SelectItem>
                 <SelectItem value="nurse">Nurse</SelectItem>
                 <SelectItem value="receptionist">Receptionist</SelectItem>
-                <SelectItem value="billing">Billing Staff</SelectItem>
+                <SelectItem value="laboratory">Lab Technician</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -366,7 +367,7 @@ function AccountSettings() {
             </tbody>
           </table>
         </div>
-      </SectionCard>
+      </SectionCard>}
 
       <SectionCard title="Preferences">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -555,19 +556,40 @@ function NotificationSettings() {
 /* ── Security ── */
 function SecuritySettings() {
   const { settings, saveSettings } = useHospitalSettings();
+  const { user } = useAuth();
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [saved, setSaved] = useState(false);
   const [security, setSecurity] = useState(settings.security);
+  const [sessions, setSessions] = useState<UserSession[]>([]);
+  const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
+  const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => setSecurity(settings.security), [settings.security]);
 
+  useEffect(() => {
+    if (user?.id) securityApi.getSessions(user.id).then(setSessions);
+  }, [user?.id]);
+
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await saveSettings({ ...settings, security });
+    setPasswordError('');
+    if (!user?.id) return setPasswordError('Your account could not be identified. Please sign in again.');
+    if (passwords.next !== passwords.confirm) return setPasswordError('New passwords do not match.');
+    try {
+      await securityApi.updatePassword(user.id, passwords.current, passwords.next);
+      setPasswords({ current: '', next: '', confirm: '' });
+    } catch (error) {
+      return setPasswordError(error instanceof Error ? error.message : 'Password update failed.');
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const revokeSession = async (id: string) => {
+    await securityApi.revokeSession(id);
+    setSessions((current) => current.filter((session) => session.id !== id));
   };
 
   const handleSecuritySave = async () => {
@@ -590,6 +612,8 @@ function SecuritySettings() {
               <div className="relative mt-1">
                 <Input
                   id={id}
+                  value={id === 'currentPw' ? passwords.current : id === 'newPw' ? passwords.next : passwords.confirm}
+                  onChange={(e) => setPasswords((current) => ({ ...current, [id === 'currentPw' ? 'current' : id === 'newPw' ? 'next' : 'confirm']: e.target.value }))}
                   type={show ? 'text' : 'password'}
                   className="pr-10"
                   required
@@ -604,6 +628,7 @@ function SecuritySettings() {
               </div>
             </div>
           ))}
+          {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
           <div className="flex items-center justify-between pt-1">
             {saved ? <SavedBanner /> : <span />}
             <Button type="submit">Update Password</Button>
@@ -656,26 +681,23 @@ function SecuritySettings() {
 
       <SectionCard title="Active Sessions">
         <div className="space-y-3">
-          {[
-            { device: 'Chrome on Windows 11', location: 'New York, NY', time: 'Current session', current: true },
-            { device: 'Safari on iPhone 15', location: 'New York, NY', time: '2 hours ago', current: false },
-          ].map(({ device, location, time, current }) => (
-            <div key={device} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+          {sessions.map((session) => (
+            <div key={session.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
               <div>
                 <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                  {device}
-                  {current && (
+                  {session.device}
+                  {session.id === localStorage.getItem('hms_session_id') && (
                     <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">
                       Active
                     </span>
                   )}
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {location} · {time}
+                  {session.location} · {new Date(session.lastActiveAt).toLocaleString()}
                 </p>
               </div>
-              {!current && (
-                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50">
+              {session.id !== localStorage.getItem('hms_session_id') && (
+                <Button variant="ghost" size="sm" onClick={() => revokeSession(session.id)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
                   Revoke
                 </Button>
               )}

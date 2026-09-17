@@ -69,6 +69,16 @@ export interface SystemUser {
   avatarUrl?: string;
 }
 
+export interface UserSession {
+  id: string;
+  userId: string;
+  device: string;
+  location: string;
+  createdAt: string;
+  lastActiveAt: string;
+  revoked: boolean;
+}
+
 export const DEFAULT_HOSPITAL_SETTINGS: HospitalSettings = {
   hospitalName: 'HealthCare Medical Center',
   registrationNumber: 'HMC-2010-00842',
@@ -448,6 +458,33 @@ export const authApi = {
       `${BASE_URL}/auth/login`,
       { method: 'POST', body: JSON.stringify({ email, password }) },
     );
+  },
+
+  async logout(sessionId: string): Promise<void> {
+    await fetch(`${BASE_URL}/sessions/${sessionId}`, { method: 'DELETE' });
+  },
+};
+
+export const securityApi = {
+  async updatePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const response = await fetch(`${BASE_URL}/users/${userId}/password`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null) as { message?: string } | null;
+      throw new Error(body?.message || `HTTP error! Status: ${response.status}`);
+    }
+  },
+
+  async getSessions(userId: string): Promise<UserSession[]> {
+    return fetchJson<UserSession[]>(`${BASE_URL}/sessions/user/${userId}`, undefined, []);
+  },
+
+  async revokeSession(id: string): Promise<void> {
+    const response = await fetch(`${BASE_URL}/sessions/${id}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
   },
 };
 

@@ -76,11 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await authApi.login(email, password);
       if (res.success && res.user) {
         const userData: AuthUser = {
+          id: res.user.id,
           name: res.user.name,
           email: res.user.email,
           role: res.user.role,
           avatarUrl: res.user.avatarUrl,
         };
+        if (res.token) save('hms_session_id', res.token);
         save('hms_user', userData);
         setUser(userData);
         if (!trialStart) {
@@ -97,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const found = DEMO_USERS.find((u) => u.email === email && u.password === password);
     if (!found) return { ok: false, error: 'Invalid email or password.' };
     const { password: _pw, ...userData } = found;
+    save('hms_session_id', `local-${Date.now()}`);
     save('hms_user', userData);
     setUser(userData);
     if (!trialStart) {
@@ -108,7 +111,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [trialStart]);
 
   const logout = useCallback(() => {
+    const sessionId = localStorage.getItem('hms_session_id');
+    if (sessionId && !sessionId.startsWith('local-')) authApi.logout(sessionId).catch(() => undefined);
     localStorage.removeItem('hms_user');
+    localStorage.removeItem('hms_session_id');
     setUser(null);
   }, []);
 

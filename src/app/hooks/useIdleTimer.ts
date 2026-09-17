@@ -9,6 +9,7 @@ export function useIdleTimer(timeout = IDLE_MS) {
   const resetTimer = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
     setIsIdle(false);
+    if (timeout <= 0) return;
     timer.current = setTimeout(() => setIsIdle(true), timeout);
   }, [timeout]);
 

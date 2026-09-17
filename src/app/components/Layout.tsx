@@ -97,7 +97,7 @@ export function Layout() {
   const { settings } = useHospitalSettings();
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { isIdle, wakeUp } = useIdleTimer();
+  const { isIdle, wakeUp } = useIdleTimer(settings.security.autoLogout ? 30 * 60 * 1000 : 0);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
