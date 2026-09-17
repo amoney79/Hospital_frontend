@@ -484,6 +484,45 @@ export const dashboardApi = {
   },
 };
 
+export const reportApi = {
+  async getAll(): Promise<Report[]> {
+    return fetchJson<Report[]>(`${BASE_URL}/reports`, undefined, localValue('hms_reports', fallbackReports));
+  },
+};
+
+export const staffApi = {
+  async getAll(): Promise<Staff[]> {
+    return fetchJson<Staff[]>(`${BASE_URL}/staff`, undefined, localValue('hms_staff', fallbackStaff));
+  },
+
+  async create(staff: Omit<Staff, 'id'>): Promise<Staff> {
+    const payload = { ...staff, id: String(Date.now()) };
+    const created = await fetchJson<Staff>(
+      `${BASE_URL}/staff`,
+      { method: 'POST', body: JSON.stringify(payload) },
+      payload
+    );
+    setLocalValue('hms_staff', [...localValue<Staff[]>('hms_staff', fallbackStaff), created]);
+    return created;
+  },
+
+  async update(id: string, staff: Partial<Staff>): Promise<Staff> {
+    const updated = await fetchJson<Staff>(
+      `${BASE_URL}/staff/${id}`,
+      { method: 'PUT', body: JSON.stringify(staff) },
+      { id, ...staff } as Staff
+    );
+    setLocalValue('hms_staff', localValue<Staff[]>('hms_staff', fallbackStaff).map((member) => member.id === id ? { ...member, ...updated } : member));
+    return updated;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    try { await fetch(`${BASE_URL}/staff/${id}`, { method: 'DELETE' }); } catch { /* local fallback */ }
+    setLocalValue('hms_staff', localValue<Staff[]>('hms_staff', fallbackStaff).filter((member) => member.id !== id));
+    return true;
+  },
+};
+
 // ─── Auth API ─────────────────────────────────────────────────────────────────
 
 export const authApi = {
