@@ -79,6 +79,40 @@ export interface UserSession {
   revoked: boolean;
 }
 
+export interface Report {
+  id: string;
+  type: 'daily' | 'monthly';
+  date: string;
+  patients: number;
+  revenueCash: number;
+  revenueBank: number;
+  expenditure: number;
+  surplus: number;
+}
+
+export interface Staff {
+  id: string;
+  name: string;
+  role: string;
+  department: string;
+  phone: string;
+  email: string;
+  education: string;
+  certifications: string[];
+  experience: number;
+  status: 'active' | 'probation' | 'retired';
+}
+
+const fallbackReports: Report[] = [
+  { id: 'r-1', type: 'daily', date: '2026-09-17', patients: 42, revenueCash: 12500, revenueBank: 28750, expenditure: 8400, surplus: 32850 },
+  { id: 'r-2', type: 'monthly', date: '2026-09', patients: 864, revenueCash: 246000, revenueBank: 512500, expenditure: 194300, surplus: 564200 },
+];
+
+const fallbackStaff: Staff[] = [
+  { id: 's-1', name: 'Dr. Robert Anderson', role: 'Doctor', department: 'General Medicine', phone: '+254 700 000 001', email: 'doctor@healthcare-mc.com', education: 'MBChB', certifications: ['Medical License'], experience: 8, status: 'active' },
+  { id: 's-2', name: 'Nurse User', role: 'Nurse', department: 'Nursing', phone: '+254 700 000 002', email: 'nurse@healthcare-mc.com', education: 'BSc Nursing', certifications: ['NCK'], experience: 5, status: 'active' },
+];
+
 export const DEFAULT_HOSPITAL_SETTINGS: HospitalSettings = {
   hospitalName: 'HealthCare Medical Center',
   registrationNumber: 'HMC-2010-00842',

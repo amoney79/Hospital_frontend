@@ -7,6 +7,8 @@ import {
   FileText,
   CreditCard,
   Package,
+  BarChart3,
+  UserCog,
   Settings,
   Menu,
   X,
@@ -29,6 +31,8 @@ const navigation = [
   { name: 'Medical Records', href: '/records', icon: FileText },
   { name: 'Transactions', href: '/transactions', icon: CreditCard },
   { name: 'Inventory', href: '/inventory', icon: Package },
+  { name: 'Reports', href: '/reports', icon: BarChart3 },
+  { name: 'Staff', href: '/staff', icon: UserCog },
 ];
 
 function NavLink({

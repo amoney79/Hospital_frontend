@@ -10,6 +10,8 @@ import MedicalRecords from "./pages/MedicalRecords";
 import Transactions from "./pages/Transactions";
 import Inventory from "./pages/Inventory";
 import Settings from "./pages/Settings";
+import Reports from "./pages/Reports";
+import Staff from "./pages/Staff";
 
 function ProtectedPage({ path, children }: { path: string; children: React.ReactNode }) {
   const { user } = useAuth();
@@ -29,6 +31,8 @@ export const router = createBrowserRouter([
       { path: "records", element: <ProtectedPage path="/records"><MedicalRecords /></ProtectedPage> },
       { path: "transactions", element: <ProtectedPage path="/transactions"><Transactions /></ProtectedPage> },
       { path: "inventory", element: <ProtectedPage path="/inventory"><Inventory /></ProtectedPage> },
+      { path: "reports", element: <ProtectedPage path="/reports"><Reports /></ProtectedPage> },
+      { path: "staff", element: <ProtectedPage path="/staff"><Staff /></ProtectedPage> },
       { path: "settings", element: <ProtectedPage path="/settings"><Settings /></ProtectedPage> },
     ],
   },

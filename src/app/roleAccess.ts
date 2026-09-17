@@ -1,11 +1,11 @@
 export type AppRole = 'admin' | 'doctor' | 'nurse' | 'lab-tech' | 'receptionist';
 
 export const ROLE_PAGES: Record<AppRole, string[]> = {
-  admin: ['/', '/patients', '/doctors', '/appointments', '/records', '/transactions', '/inventory', '/settings'],
+  admin: ['/', '/patients', '/doctors', '/appointments', '/records', '/transactions', '/inventory', '/reports', '/staff', '/settings'],
   doctor: ['/', '/patients', '/appointments', '/records', '/settings'],
   nurse: ['/', '/patients', '/appointments', '/records', '/settings'],
   'lab-tech': ['/', '/patients', '/records', '/inventory', '/settings'],
-  receptionist: ['/', '/patients', '/doctors', '/appointments', '/transactions', '/settings'],
+  receptionist: ['/', '/patients', '/doctors', '/appointments', '/transactions', '/reports', '/staff', '/settings'],
 };
 
 export function normalizeRole(role?: string): AppRole {
