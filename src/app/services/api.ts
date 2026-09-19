@@ -514,6 +514,20 @@ export const reportApi = {
     setLocalValue('hms_reports', [...localValue<Report[]>('hms_reports', fallbackReports), created]);
     return created;
   },
+  async update(id: string, report: Partial<Report>): Promise<Report> {
+    const updated = await fetchJson<Report>(
+      `${BASE_URL}/reports/${id}`,
+      { method: 'PUT', body: JSON.stringify(report) },
+      { id, ...report } as Report
+    );
+    setLocalValue('hms_reports', localValue<Report[]>('hms_reports', fallbackReports).map((item) => item.id === id ? { ...item, ...updated } : item));
+    return updated;
+  },
+  async delete(id: string): Promise<boolean> {
+    try { await fetch(`${BASE_URL}/reports/${id}`, { method: 'DELETE' }); } catch { /* local fallback */ }
+    setLocalValue('hms_reports', localValue<Report[]>('hms_reports', fallbackReports).filter((item) => item.id !== id));
+    return true;
+  },
 };
 
 export const staffApi = {
