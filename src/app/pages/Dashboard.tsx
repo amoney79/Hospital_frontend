@@ -40,7 +40,7 @@ export default function Dashboard() {
     },
     {
       title: 'Total Revenue',
-      value: `$${totalRevenue.toFixed(0)}`,
+      value: `$Ksh{totalRevenue.toFixed(0)}`,
       icon: DollarSign,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
@@ -54,7 +54,7 @@ export default function Dashboard() {
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-semibold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Welcome to Healthcare Management System</p>
+        <p className="text-gray-600 mt-1">Welcome to Tibacare Management System</p>
       </div>
 
       {/* Stats Grid */}
