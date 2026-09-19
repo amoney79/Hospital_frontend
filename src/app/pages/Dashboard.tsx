@@ -54,7 +54,7 @@ export default function Dashboard() {
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-semibold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Welcome to Healthcare Management System</p>
+        <p className="text-gray-600 mt-1">Welcome to TibaCare Management System</p>
       </div>
 
       {/* Stats Grid */}
@@ -131,7 +131,7 @@ export default function Dashboard() {
                     <p className="text-sm text-gray-600">{transaction.serviceType}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">${transaction.amount.toFixed(2)}</p>
+                    <p className="text-sm font-medium text-gray-900">Ksh{transaction.amount.toFixed(2)}</p>
                     <span
                       className={`inline-block px-2 py-1 text-xs rounded-full mt-1 ${
                         transaction.status === 'paid'

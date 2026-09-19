@@ -113,7 +113,7 @@ export function Layout() {
           <div className="flex items-center justify-between p-6 border-b">
             <div className="flex items-center gap-2">
               <HeartPulse className="w-6 h-6 text-blue-600" />
-              <h1 className="text-xl font-semibold text-blue-600">HealthCare MS</h1>
+              <h1 className="text-xl font-semibold text-blue-600">AfyaCare MS</h1>
             </div>
             <button onClick={() => setSidebarOpen(false)} className="text-gray-500">
               <X className="w-6 h-6" />
@@ -138,7 +138,7 @@ export function Layout() {
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200 overflow-hidden">
           <div className="flex items-center gap-2 px-6 py-6 border-b">
             <HeartPulse className="w-7 h-7 text-blue-600" />
-            <h1 className="text-2xl font-semibold text-blue-600">HealthCare MS</h1>
+            <h1 className="text-2xl font-semibold text-blue-600">AfyaCare MS</h1>
           </div>
           <nav className="flex-1 px-4 py-6 overflow-y-auto">
             {navigation.filter((item) => canAccess(user?.role, item.href)).map((item) => (
@@ -162,7 +162,7 @@ export function Layout() {
           </button>
           <div className="flex items-center gap-2">
             <HeartPulse className="w-5 h-5 text-blue-600" />
-            <h1 className="text-xl font-semibold text-blue-600">HealthCare MS</h1>
+            <h1 className="text-xl font-semibold text-blue-600">AfyaCare MS</h1>
           </div>
         </div>
 
