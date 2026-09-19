@@ -40,7 +40,7 @@ export default function Dashboard() {
     },
     {
       title: 'Total Revenue',
-      value: `Ksh ${totalRevenue.toFixed(0)}`,
+      value: `$${totalRevenue.toFixed(0)}`,
       icon: DollarSign,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
@@ -131,7 +131,7 @@ export default function Dashboard() {
                     <p className="text-sm text-gray-600">{transaction.serviceType}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">Ksh {transaction.amount.toFixed(2)}</p>
+                    <p className="text-sm font-medium text-gray-900">${transaction.amount.toFixed(2)}</p>
                     <span
                       className={`inline-block px-2 py-1 text-xs rounded-full mt-1 ${
                         transaction.status === 'paid'
