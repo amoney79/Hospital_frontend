@@ -5,7 +5,7 @@ import {
   Package,
   AlertTriangle,
   XCircle,
-  DollarSign,
+  Wallet,
   Eye,
   Pencil,
   RefreshCw,
@@ -332,7 +332,7 @@ export default function Inventory() {
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-green-50">
-                <DollarSign className="w-6 h-6 text-green-600" />
+                <Wallet className="w-6 h-6 text-green-600" />
               </div>
             </div>
           </CardContent>
