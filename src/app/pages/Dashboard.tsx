@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Calendar, Activity, DollarSign } from 'lucide-react';
+import { Users, Calendar, Activity, Wallet } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { mockPatients, mockDoctors, mockAppointments, mockTransactions } from '../data/mockData';
 import { dashboardApi, DashboardStats } from '../services/api';
@@ -40,8 +40,8 @@ export default function Dashboard() {
     },
     {
       title: 'Total Revenue',
-      value: `${totalRevenue.toFixed(0)}`,
-      icon: DollarSign,
+      value: `Ksh ${totalRevenue.toFixed(0)}`,
+      icon: Wallet,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
     },
