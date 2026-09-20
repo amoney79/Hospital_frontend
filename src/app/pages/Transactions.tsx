@@ -176,7 +176,7 @@ export default function Transactions() {
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-green-50">
-                <DollarSign className="w-6 h-6 text-green-600" />
+                <Wallet className="w-6 h-6 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -192,7 +192,7 @@ export default function Transactions() {
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-yellow-50">
-                <DollarSign className="w-6 h-6 text-yellow-600" />
+                <Wallet className="w-6 h-6 text-yellow-600" />
               </div>
             </div>
           </CardContent>
@@ -208,7 +208,7 @@ export default function Transactions() {
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-red-50">
-                <DollarSign className="w-6 h-6 text-red-600" />
+                <Wallet className="w-6 h-6 text-red-600" />
               </div>
             </div>
           </CardContent>
@@ -292,7 +292,7 @@ export default function Transactions() {
                               setIsPaymentDialogOpen(true);
                             }}
                           >
-                            <DollarSign className="w-4 h-4" />
+                            <Wallet className="w-4 h-4" />
                           </Button>
                         )}
                         <Button variant="ghost" size="sm">
