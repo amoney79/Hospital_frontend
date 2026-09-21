@@ -435,7 +435,7 @@ export default function Transactions() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Cash">Cash</SelectItem>
-                    <SelectItem value="Credit Card">Credit Card</SelectItem>
+                    <SelectItem value="Credit Card">Mpesa</SelectItem>
                     <SelectItem value="Debit Card">Debit Card</SelectItem>
                     <SelectItem value="Insurance">Insurance</SelectItem>
                     <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
