@@ -18,7 +18,7 @@ export default function Payment() {
             <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-200">
               <HeartPulse className="w-7 h-7 text-white" />
             </div>
-            <span className="text-2xl font-semibold text-blue-700">TibaCare MS</span>
+            <span className="text-2xl font-semibold text-blue-700">AfyaCare MS</span>
           </div>
 
           <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2 rounded-full text-sm font-medium mb-5">
