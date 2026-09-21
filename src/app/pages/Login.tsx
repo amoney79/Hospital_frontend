@@ -55,7 +55,7 @@ export default function Login() {
           <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center">
             <HeartPulse className="w-6 h-6 text-blue-300" />
           </div>
-          <span className="text-white text-xl font-semibold tracking-wide">HealthCare MS</span>
+          <span className="text-white text-xl font-semibold tracking-wide">AfyaCare MS</span>
         </div>
 
         {/* Hero copy */}
@@ -90,7 +90,7 @@ export default function Login() {
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
             <HeartPulse className="w-7 h-7 text-blue-600" />
-            <span className="text-xl font-semibold text-blue-600">HealthCare MS</span>
+            <span className="text-xl font-semibold text-blue-600">AfyaCare MS</span>
           </div>
 
           {/* Free trial notice */}

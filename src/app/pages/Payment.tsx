@@ -26,7 +26,7 @@ export default function Payment() {
             Your 7-day free trial has ended
           </div>
 
-          <h1 className="text-2xl font-semibold text-gray-900">Subscribe to continue</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Subscribe to continue </h1>
           <p className="text-gray-500 text-sm mt-2">
             Activate your subscription to restore full access to all modules.
           </p>
