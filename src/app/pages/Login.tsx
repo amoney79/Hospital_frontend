@@ -19,6 +19,7 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showResetMessage, setShowResetMessage] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -154,12 +155,20 @@ export default function Login() {
               {loading ? 'Signing in…' : 'Sign In'}
             </Button>
           </form>
+
+          {/* Forgot password button */}
           <div>
-            <Button type="button" variant="link" className="mt-4 text-sm text-gray-500 hover:text-gray-700">
+            <Button type="button" variant="link" className="mt-4 text-sm text-gray-500 hover:text-gray-700" 
+            onClick={() => setShowResetMessage(!showResetMessage)}>
               <span className="text-sm text-gray-500 hover:text-gray-700">
                 Forgot your password?
               </span>
             </Button>
+              {showResetMessage && (
+                <p className="mt-2 text-sm text-amber-600">
+                Please contact the System Administrator to reset your password.
+                </p>
+                )}
           </div>
         </div>
       </div>
