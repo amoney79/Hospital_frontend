@@ -62,7 +62,7 @@ export default function Login() {
         <div className="relative">
           <div className="inline-flex items-center gap-2 bg-blue-500/20 border border-blue-400/20 text-blue-300 text-xs px-3 py-1.5 rounded-full mb-6">
             <Stethoscope className="w-3.5 h-3.5" />
-            Medical Management System
+            AfyaCare Management System
           </div>
           <h1 className="text-5xl font-light text-white leading-tight mb-6">
             Modern healthcare<br />
