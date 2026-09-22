@@ -62,7 +62,7 @@ export default function Login() {
         <div className="relative">
           <div className="inline-flex items-center gap-2 bg-blue-500/20 border border-blue-400/20 text-blue-300 text-xs px-3 py-1.5 rounded-full mb-6">
             <Stethoscope className="w-3.5 h-3.5" />
-            AfyaCare Management System
+            Medical Management System
           </div>
           <h1 className="text-5xl font-light text-white leading-tight mb-6">
             Modern healthcare<br />
@@ -96,7 +96,7 @@ export default function Login() {
           {/* Free trial notice */}
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-4 mb-8">
             <div className="flex items-start gap-3">
-              <span className="text-2xl">🎉</span>
+              
               <div>
                 <p className="text-sm font-semibold text-blue-900">7-Day Free Trial Included</p>
                 <p className="text-xs text-blue-600 mt-0.5 leading-relaxed">
