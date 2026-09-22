@@ -10,7 +10,7 @@ const FEATURES = [
   'Complete patient lifecycle management',
   'Real-time inventory & billing tracking',
   'Secure medical records & appointments',
-  'Role-based access for all staff',
+  
 ];
 
 export default function Login() {
