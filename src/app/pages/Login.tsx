@@ -62,7 +62,7 @@ export default function Login() {
         <div className="relative">
           <div className="inline-flex items-center gap-2 bg-blue-500/20 border border-blue-400/20 text-blue-300 text-xs px-3 py-1.5 rounded-full mb-6">
             <Stethoscope className="w-3.5 h-3.5" />
-            Medical Management System
+            AfyaCare Management System
           </div>
           <h1 className="text-5xl font-light text-white leading-tight mb-6">
             Modern healthcare<br />
@@ -154,24 +154,6 @@ export default function Login() {
               {loading ? 'Signing in…' : 'Sign In'}
             </Button>
           </form>
-
-          {/* Demo credentials */}
-          <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-              Demo Credentials
-            </p>
-            <div className="space-y-2">
-              {[
-                { label: 'Administrator', email: 'admin@healthcare-mc.com', pw: 'admin123' },
-                { label: 'Doctor', email: 'doctor@healthcare-mc.com', pw: 'doctor123' },
-              ].map((cred) => (
-                <div key={cred.email} className="text-xs text-gray-600 bg-white rounded-lg px-3 py-2 border border-gray-100">
-                  <span className="font-medium text-gray-800">{cred.label}:</span>{' '}
-                  {cred.email} / <span className="font-mono">{cred.pw}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>
