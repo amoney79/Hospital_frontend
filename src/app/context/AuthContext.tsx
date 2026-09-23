@@ -21,6 +21,12 @@ export interface AuthUser {
   avatarUrl?: string;
 }
 
+interface AuthResult {
+  ok: boolean;
+  requires2FA?: boolean;
+  error?: string;
+}
+
 interface AuthContextType {
   user: AuthUser | null;
   trialStart: string | null;
@@ -33,7 +39,8 @@ interface AuthContextType {
   isSubscriptionExpired: boolean;
   showRenewalReminder: boolean;
 
-  login(email: string, password: string): Promise<{ ok: boolean; error?: string }>;
+  login(email: string, password: string): Promise<AuthResult>;
+  verify2FA(email: string, code: string): Promise<AuthResult>;
   logout(): void;
   updateUser(updates: Partial<AuthUser>): void;
   activateSubscription(): void;
@@ -59,6 +66,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [trialStart, setTrialStart] = useState<string | null>(() => load('hms_trial_start'));
   const [paymentDate, setPaymentDate] = useState<string | null>(() => load('hms_payment_date'));
 
+  //Temporary storage for local demo 2FA sessions
+  const [pendingDemoUser, setPendingDemoUser] = useState<AuthUser  | null >(null);
+
   // Trial
   const trialDaysSince = trialStart ? daysSince(trialStart) : 0;
   const trialDaysRemaining = TRIAL_DAYS - trialDaysSince;
@@ -71,9 +81,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isSubscriptionExpired = !!paymentDate && subscriptionDaysRemaining <= 0;
   const showRenewalReminder = hasValidSubscription && subscriptionDaysRemaining <= REMINDER_DAYS;
 
+  // Finalizes the session state after successful credentials/2FA check
+    const completeAuth = useCallback((userData: AuthUser, token?: string) => {
+      if (token) save('hms_session_id', token);
+      save('hms_user', userData);
+      setUser(userData);
+      if (!trialStart) {
+        const now = new Date().toISOString();
+        save('hms_trial_start', now);
+        setTrialStart(now);
+      }
+    }, [trialStart]);
+
   const login = useCallback(async (email: string, password: string) => {
     try {
       const res = await authApi.login(email, password);
+
+      // Handle API response indicating 2FA requirement
+      if (res.requires2FA) {
+        return { ok: true, requires2FA: true };
+      }
+      
       if (res.success && res.user) {
         const userData: AuthUser = {
           id: res.user.id,
