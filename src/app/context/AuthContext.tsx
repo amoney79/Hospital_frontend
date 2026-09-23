@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (res.requires2FA) {
         return { ok: true, requires2FA: true };
       }
-      
+
       if (res.success && res.user) {
         const userData: AuthUser = {
           id: res.user.id,
@@ -137,6 +137,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     return { ok: true };
   }, [trialStart]);
+
+  // Simulating 2FA prompt for demo users
+      setPendingDemoUser(userData);
+      return { ok: true, requires2FA: true };
+    }, [completeAuth]);
+  
+    const verify2FA = useCallback(async (email: string, code: string): Promise<AuthResult> => {
+      try {
+        const res = await authApi.verify2FA(email, code);
+        if (res.success && res.user) {
+          completeAuth({
+            id: res.user.id,
+            name: res.user.name,
+            email: res.user.email,
+            role: res.user.role,
+            avatarUrl: res.user.avatarUrl,
+          }, res.token);
+          return { ok: true };
+        }
+        if (!res.success) {
+          return { ok: false, error: res.error ?? 'Invalid verification code.' };
+        }
+      } catch {
+        console.warn('Backend 2FA fallback to local verification');
+      }
+  
+      // Local Demo verification fallback (Accepts '123456')
+      if (pendingDemoUser && pendingDemoUser.email === email) {
+        if (code === '123456') {
+          completeAuth(pendingDemoUser, `local-${Date.now()}`);
+          setPendingDemoUser(null);
+          return { ok: true };
+        }
+        return { ok: false, error: 'Invalid verification code. (Demo code is 123456)' };
+      }
+  
+      return { ok: false, error: 'Session expired or invalid request. Please log in again.' };
+    }, [pendingDemoUser, completeAuth]);
 
   const logout = useCallback(() => {
     const sessionId = localStorage.getItem('hms_session_id');
