@@ -14,8 +14,14 @@ const FEATURES = [
 ];
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, verify2FA } = useAuth();
   const { settings } = useHospitalSettings();
+
+  //state management
+  const [step, setStep] = useState<'login' | '2fa'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [twoFactorCode, setTwoFactorCode] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,9 +34,33 @@ export default function Login() {
     setLoading(true);
     try {
       const result = await login(f.get('email') as string, f.get('password') as string);
-      if (!result.ok) setError(result.error ?? 'Login failed.');
+
+      if(result.requires2FA){
+        // Transition to 2FA Step
+        setStep('2fa');
+      }else if (!result.ok) {
+        setError(result.error ?? 'Login failed.');
+      }
     } catch {
       setError('An error occurred during login.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //2FA Verification Submission
+  const handle2FASubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const result = await verify2FA(email, twoFactorCode);
+      if (!result.ok) {
+        setError(result.error ?? 'Invalid verification code.');
+      }
+    } catch {
+      setError('An error occurred during 2FA verification.');
     } finally {
       setLoading(false);
     }
