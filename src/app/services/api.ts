@@ -567,9 +567,16 @@ export const staffApi = {
 
 export const authApi = {
   async login(email: string, password?: string) {
-    return fetchJson<{ success: boolean; user?: any; token?: string; message?: string }>(
+    return fetchJson<{ success: boolean; requires2FA?: boolean; user?: any; token?: string; message?: string }>(
       `${BASE_URL}/auth/login`,
       { method: 'POST', body: JSON.stringify({ email, password }) },
+    );
+  },
+
+  async verify2FA(email: string, code: string) {
+    return fetchJson<{ success: boolean; user?: any; token?: string; error?: string }>(
+      `${BASE_URL}/auth/verify-2fa`,
+      { method: 'POST', body: JSON.stringify({ email, code }) },
     );
   },
 

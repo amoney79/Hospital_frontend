@@ -140,7 +140,7 @@ export default function Login() {
           <h2 className="text-2xl font-semibold text-gray-900 mb-1">Welcome back</h2>
           <p className="text-gray-500 text-sm mb-7">Sign in to your account to continue</p>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          {step === 'login' ? <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <Label htmlFor="email">Email Address</Label>
               <Input
@@ -184,7 +184,31 @@ export default function Login() {
             <Button type="submit" className="w-full h-11" disabled={loading}>
               {loading ? 'Signing in…' : 'Sign In'}
             </Button>
-          </form>
+          </form> : (
+            <form onSubmit={handle2FASubmit} className="space-y-5">
+              <div>
+                <Label htmlFor="twoFactorCode">Verification code</Label>
+                <Input
+                  id="twoFactorCode"
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="123456"
+                  required
+                  className="mt-1 tracking-[0.35em]"
+                />
+                <p className="text-xs text-gray-500 mt-2">Enter the code from your authenticator or verification service.</p>
+              </div>
+              {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-red-700 text-sm">{error}</div>}
+              <Button type="submit" className="w-full h-11" disabled={loading}>
+                {loading ? 'Verifying…' : 'Verify and Sign In'}
+              </Button>
+              <Button type="button" variant="link" className="w-full" onClick={() => { setStep('login'); setTwoFactorCode(''); setError(''); }}>
+                Back to sign in
+              </Button>
+            </form>
+          )}
 
           {/* Forgot password button */}
           <div>

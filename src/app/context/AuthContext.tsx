@@ -66,8 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [trialStart, setTrialStart] = useState<string | null>(() => load('hms_trial_start'));
   const [paymentDate, setPaymentDate] = useState<string | null>(() => load('hms_payment_date'));
 
-  //Temporary storage for local demo 2FA sessions
-  const [pendingDemoUser, setPendingDemoUser] = useState<AuthUser  | null >(null);
+  const [pendingDemoUser, setPendingDemoUser] = useState<AuthUser | null>(null);
 
   // Trial
   const trialDaysSince = trialStart ? daysSince(trialStart) : 0;
@@ -98,7 +97,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await authApi.login(email, password);
 
       // Handle API response indicating 2FA requirement
-      if (res.requires2FA) {
+        if (res.requires2FA) {
+          const found = DEMO_USERS.find((candidate) => candidate.email === email);
+          if (found) {
+            const { password: _password, ...pendingUser } = found;
+            setPendingDemoUser(pendingUser);
+          }
         return { ok: true, requires2FA: true };
       }
 
@@ -127,6 +131,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const found = DEMO_USERS.find((u) => u.email === email && u.password === password);
     if (!found) return { ok: false, error: 'Invalid email or password.' };
     const { password: _pw, ...userData } = found;
+    const settings = load<{ security?: { twoFactorAuthentication?: boolean } }>('hms_settings');
+    if (settings?.security?.twoFactorAuthentication) {
+      setPendingDemoUser(userData);
+      return { ok: true, requires2FA: true };
+    }
     save('hms_session_id', `local-${Date.now()}`);
     save('hms_user', userData);
     setUser(userData);
@@ -138,43 +147,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }, [trialStart]);
 
-  // Simulating 2FA prompt for demo users
-      setPendingDemoUser(userData);
-      return { ok: true, requires2FA: true };
-    }, [completeAuth]);
-  
-    const verify2FA = useCallback(async (email: string, code: string): Promise<AuthResult> => {
-      try {
-        const res = await authApi.verify2FA(email, code);
-        if (res.success && res.user) {
-          completeAuth({
-            id: res.user.id,
-            name: res.user.name,
-            email: res.user.email,
-            role: res.user.role,
-            avatarUrl: res.user.avatarUrl,
-          }, res.token);
-          return { ok: true };
-        }
-        if (!res.success) {
-          return { ok: false, error: res.error ?? 'Invalid verification code.' };
-        }
-      } catch {
-        console.warn('Backend 2FA fallback to local verification');
+  const verify2FA = useCallback(async (email: string, code: string): Promise<AuthResult> => {
+    try {
+      const res = await authApi.verify2FA(email, code);
+      if (res.success && res.user) {
+        completeAuth({
+          id: res.user.id,
+          name: res.user.name,
+          email: res.user.email,
+          role: res.user.role,
+          avatarUrl: res.user.avatarUrl,
+        }, res.token);
+        setPendingDemoUser(null);
+        return { ok: true };
       }
-  
-      // Local Demo verification fallback (Accepts '123456')
-      if (pendingDemoUser && pendingDemoUser.email === email) {
-        if (code === '123456') {
-          completeAuth(pendingDemoUser, `local-${Date.now()}`);
-          setPendingDemoUser(null);
-          return { ok: true };
-        }
-        return { ok: false, error: 'Invalid verification code. (Demo code is 123456)' };
-      }
-  
-      return { ok: false, error: 'Session expired or invalid request. Please log in again.' };
-    }, [pendingDemoUser, completeAuth]);
+      if (res.error) return { ok: false, error: res.error };
+    } catch {
+      console.warn('Backend 2FA unavailable; using demo verification.');
+    }
+
+    if (pendingDemoUser?.email !== email) {
+      return { ok: false, error: 'Session expired. Please log in again.' };
+    }
+    if (code !== '123456') {
+      return { ok: false, error: 'Invalid verification code. Demo code: 123456' };
+    }
+    completeAuth(pendingDemoUser, `local-${Date.now()}`);
+    setPendingDemoUser(null);
+    return { ok: true };
+  }, [completeAuth, pendingDemoUser]);
 
   const logout = useCallback(() => {
     const sessionId = localStorage.getItem('hms_session_id');
@@ -210,6 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isSubscriptionExpired,
     showRenewalReminder,
     login,
+    verify2FA,
     logout,
     updateUser,
     activateSubscription,
@@ -218,7 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     trialDaysRemaining, isTrialExpired,
     hasValidSubscription, subscriptionDaysRemaining,
     isSubscriptionExpired, showRenewalReminder,
-    login, logout, updateUser, activateSubscription,
+    login, verify2FA, logout, updateUser, activateSubscription,
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
