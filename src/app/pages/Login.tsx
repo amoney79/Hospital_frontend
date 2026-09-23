@@ -5,6 +5,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { useAuth } from '../context/AuthContext';
 import { useHospitalSettings } from '../context/HospitalSettingsContext';
+import { tenantApi } from '../services/api';
 
 const FEATURES = [
   'Complete patient lifecycle management',
@@ -26,6 +27,8 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showResetMessage, setShowResetMessage] = useState(false);
+  const [showTenantForm, setShowTenantForm] = useState(false);
+  const [tenantMessage, setTenantMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -61,6 +64,29 @@ export default function Login() {
       }
     } catch {
       setError('An error occurred during 2FA verification.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTenantRegistration = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setTenantMessage('');
+    const form = new FormData(e.currentTarget);
+    try {
+      const result = await tenantApi.register({
+        hospitalName: String(form.get('hospitalName')),
+        slug: String(form.get('slug')),
+        adminName: String(form.get('adminName')),
+        adminEmail: String(form.get('adminEmail')),
+        password: String(form.get('tenantPassword')),
+        phone: String(form.get('tenantPhone')),
+      });
+      setTenantMessage(`${result.message} Your tenant database is ready.`);
+      e.currentTarget.reset();
+    } catch {
+      setTenantMessage('Tenant registration requires the backend tenant provisioning service.');
     } finally {
       setLoading(false);
     }
@@ -137,10 +163,22 @@ export default function Login() {
             </div>
           </div>
 
-          <h2 className="text-2xl font-semibold text-gray-900 mb-1">Welcome back</h2>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-1">{showTenantForm ? 'Create your hospital account' : 'Welcome back'}</h2>
           <p className="text-gray-500 text-sm mb-7">Sign in to your account to continue</p>
 
-          {step === 'login' ? <form onSubmit={handleSubmit} className="space-y-5">
+          {showTenantForm ? (
+            <form onSubmit={handleTenantRegistration} className="space-y-4">
+              <div><Label htmlFor="hospitalName">Hospital Name</Label><Input id="hospitalName" name="hospitalName" required className="mt-1" /></div>
+              <div><Label htmlFor="slug">Hospital Slug</Label><Input id="slug" name="slug" placeholder="my-hospital" required className="mt-1" /></div>
+              <div><Label htmlFor="adminName">Administrator Name</Label><Input id="adminName" name="adminName" required className="mt-1" /></div>
+              <div><Label htmlFor="adminEmail">Administrator Email</Label><Input id="adminEmail" name="adminEmail" type="email" required className="mt-1" /></div>
+              <div><Label htmlFor="tenantPhone">M-Pesa Phone</Label><Input id="tenantPhone" name="tenantPhone" inputMode="tel" placeholder="2547XXXXXXXX" required className="mt-1" /></div>
+              <div><Label htmlFor="tenantPassword">Password</Label><Input id="tenantPassword" name="tenantPassword" type="password" minLength={8} required className="mt-1" /></div>
+              {tenantMessage && <p className="rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-700">{tenantMessage}</p>}
+              <Button type="submit" className="w-full h-11" disabled={loading}>{loading ? 'Creating tenant…' : 'Get Started'}</Button>
+              <Button type="button" variant="link" className="w-full" onClick={() => setShowTenantForm(false)}>Back to sign in</Button>
+            </form>
+          ) : step === 'login' ? <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <Label htmlFor="email">Email Address</Label>
               <Input
@@ -208,6 +246,12 @@ export default function Login() {
                 Back to sign in
               </Button>
             </form>
+          )}
+
+          {!showTenantForm && step === 'login' && (
+            <Button type="button" variant="link" className="mt-4 w-full text-blue-600" onClick={() => setShowTenantForm(true)}>
+              New hospital? Get started
+            </Button>
           )}
 
           {/* Forgot password button */}
