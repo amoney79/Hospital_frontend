@@ -14,6 +14,7 @@ import {
   X,
   HeartPulse,
   LogOut,
+  Bell,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -55,6 +56,42 @@ function NavLink({
       <item.icon className="w-5 h-5 shrink-0" />
       <span>{item.name}</span>
     </Link>
+  );
+}
+
+function NotificationBell() {
+  const { settings } = useHospitalSettings();
+  const [open, setOpen] = useState(false);
+  const notifications = settings.notifications.filter((notification) => notification.inApp);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        title="Notifications"
+        onClick={() => setOpen((current) => !current)}
+        className="relative p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+      >
+        <Bell className="w-5 h-5" />
+        {notifications.length > 0 && <span className="absolute right-1 top-1 w-2 h-2 rounded-full bg-red-500" />}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-11 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-gray-200 bg-white shadow-xl">
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <p className="font-semibold text-gray-900">Notifications</p>
+            <span className="text-xs text-gray-500">{notifications.length} enabled</span>
+          </div>
+          <div className="max-h-80 overflow-y-auto divide-y">
+            {notifications.length === 0 ? <p className="px-4 py-6 text-sm text-gray-500">No notifications enabled.</p> : notifications.map((notification) => (
+              <div key={notification.id} className="px-4 py-3">
+                <p className="text-sm font-medium text-gray-900">{notification.label}</p>
+                <p className="mt-0.5 text-xs text-gray-500">{notification.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -111,9 +148,10 @@ export function Layout() {
         <div className="fixed inset-0 bg-gray-900/80" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 w-72 bg-white shadow-xl flex flex-col">
           <div className="flex items-center justify-between p-6 border-b">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
               <HeartPulse className="w-6 h-6 text-blue-600" />
               <h1 className="text-xl font-semibold text-blue-600">AfyaCare MS</h1>
+              <NotificationBell />
             </div>
             <button onClick={() => setSidebarOpen(false)} className="text-gray-500">
               <X className="w-6 h-6" />
@@ -136,9 +174,12 @@ export function Layout() {
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200 overflow-hidden">
-          <div className="flex items-center gap-2 px-6 py-6 border-b">
+          <div className="flex items-center justify-between gap-2 px-6 py-6 border-b">
+            <div className="flex items-center gap-2">
             <HeartPulse className="w-7 h-7 text-blue-600" />
             <h1 className="text-2xl font-semibold text-blue-600">AfyaCare MS</h1>
+            </div>
+            <NotificationBell />
           </div>
           <nav className="flex-1 px-4 py-6 overflow-y-auto">
             {navigation.filter((item) => canAccess(user?.role, item.href)).map((item) => (
@@ -160,9 +201,10 @@ export function Layout() {
           <button onClick={() => setSidebarOpen(true)} className="text-gray-500">
             <Menu className="w-6 h-6" />
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2">
             <HeartPulse className="w-5 h-5 text-blue-600" />
             <h1 className="text-xl font-semibold text-blue-600">AfyaCare MS</h1>
+            <NotificationBell />
           </div>
         </div>
 

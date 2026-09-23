@@ -58,6 +58,28 @@ export interface SecuritySettings {
   loginActivityAlerts: boolean;
 }
 
+export interface TenantRegistration {
+  hospitalName: string;
+  slug: string;
+  adminName: string;
+  adminEmail: string;
+  password: string;
+  phone: string;
+}
+
+export interface TenantRegistrationResult {
+  tenantId: string;
+  databaseName: string;
+  message: string;
+}
+
+export interface MpesaStkRequest {
+  phoneNumber: string;
+  amount: number;
+  accountReference: string;
+  description?: string;
+}
+
 export interface SystemUser {
   id: string;
   name: string;
@@ -582,6 +604,24 @@ export const authApi = {
 
   async logout(sessionId: string): Promise<void> {
     await fetch(`${BASE_URL}/sessions/${sessionId}`, { method: 'DELETE' });
+  },
+};
+
+export const tenantApi = {
+  async register(tenant: TenantRegistration): Promise<TenantRegistrationResult> {
+    return fetchJson<TenantRegistrationResult>(
+      `${BASE_URL}/tenants/register`,
+      { method: 'POST', body: JSON.stringify(tenant) }
+    );
+  },
+};
+
+export const mpesaApi = {
+  async initiateStkPush(request: MpesaStkRequest): Promise<{ checkoutRequestId: string; customerMessage?: string }> {
+    return fetchJson<{ checkoutRequestId: string; customerMessage?: string }>(
+      `${BASE_URL}/payments/mpesa/stk-push`,
+      { method: 'POST', body: JSON.stringify(request) }
+    );
   },
 };
 
