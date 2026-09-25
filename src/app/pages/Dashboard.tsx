@@ -20,12 +20,14 @@ export default function Dashboard() {
     {
       title: 'Total Patients',
       value: totalPatients,
+      icon: Users,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
     },
     {
       title: 'Available Doctors',
       value: availableDoctors,
+      icon: Activity,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
     },
@@ -66,7 +68,6 @@ export default function Dashboard() {
                   <p className="text-3xl font-semibold mt-2">{stat.value}</p>
                 </div>
                 <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
                 </div>
               </div>
             </CardContent>
