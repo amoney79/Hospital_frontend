@@ -41,7 +41,7 @@ function NavLink({
   active,
   onClick,
 }: {
-  item: { name: string; href: string; icon: React.ElementType };
+  item: { name: string; href: string };
   active: boolean;
   onClick?: () => void;
 }) {
@@ -53,7 +53,6 @@ function NavLink({
         active ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'
       }`}
     >
-      <item.icon className="w-5 h-5 shrink-0" />
       <span>{item.name}</span>
     </Link>
   );
@@ -107,7 +106,7 @@ function SidebarFooter({ pathname, onNav }: { pathname: string; onNav?: () => vo
   return (
     <div className="px-4 pb-4 border-t pt-4">
       <NavLink
-        item={{ name: 'Settings', href: '/settings', icon: Settings }}
+        item={{ name: 'Settings', href: '/settings' }}
         active={pathname === '/settings'}
         onClick={onNav}
       />
