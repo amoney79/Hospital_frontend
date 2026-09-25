@@ -20,14 +20,12 @@ export default function Dashboard() {
     {
       title: 'Total Patients',
       value: totalPatients,
-      icon: Users,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
     },
     {
       title: 'Available Doctors',
       value: availableDoctors,
-      icon: Activity,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
     },
