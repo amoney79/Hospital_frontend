@@ -906,6 +906,10 @@ export default function Settings() {
             <Shield className="w-4 h-4" />
             Security
           </TabsTrigger>
+          <TabsTrigger value="mpesa" className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4" />
+            M-Pesa
+          </TabsTrigger>
         </TabsList>
 
         {isAdmin && <TabsContent value="general"><GeneralSettings /></TabsContent>}
