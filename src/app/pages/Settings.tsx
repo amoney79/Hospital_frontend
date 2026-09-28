@@ -918,6 +918,9 @@ export default function Settings() {
         <TabsContent value="security">
           <SecuritySettings />
         </TabsContent>
+        <TabsContent value="mpesa">
+          <MpesaSettings />
+        </TabsContent>
       </Tabs>
     </div>
   );
