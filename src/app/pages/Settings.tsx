@@ -709,6 +709,169 @@ function SecuritySettings() {
   );
 }
 
+
+/* ── M-Pesa Integration Settings ── */
+function MpesaSettings() {
+  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
+  const [showPasskey, setShowPasskey] = useState(false);
+
+  // Form State matching the database schema
+  const [form, setForm] = useState({
+    shortcode: '',
+    consumerKey: '',
+    consumerSecret: '',
+    passkey: '',
+    type: 'PAYBILL', // Default selection
+  });
+
+  // Fetch existing config on mount
+  useEffect(() => {
+    // Replace with your real service layer call: e.g., paymentApi.getMpesaConfig()
+    // It should hit your GET /api/v1/payments/status/{clientId} endpoint
+  }, []);
+
+  const updateField = (key: string, value: string) => {
+    setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      // Replace with your real service layer API post request:
+      // await paymentApi.saveMpesaConfig(form);
+      
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      console.error("Failed to save M-Pesa credentials", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <SectionCard title="Lipa Na M-Pesa Gateway Settings">
+        <div className="space-y-4">
+          
+          {/* Account Type Selection */}
+          <div>
+            <Label htmlFor="mpesaType">Account Type</Label>
+            <Select value={form.type} onValueChange={(value) => updateField('type', value)}>
+              <SelectTrigger className="mt-1 w-full md:w-1/2">
+                <SelectValue placeholder="Select Account Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PAYBILL">M-Pesa Paybill Number</SelectItem>
+                <SelectItem value="TILL">M-Pesa Buy Goods Till</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500 mt-1">
+              Choose &quot;Paybill&quot; if you use an account number rule, or &quot;Buy Goods Till&quot; for direct retail merchant codes.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            {/* Shortcode / Business Number */}
+            <div className="md:col-span-2">
+              <Label htmlFor="shortcode">M-Pesa Business Shortcode</Label>
+              <Input 
+                id="shortcode" 
+                placeholder="e.g., 4029321" 
+                value={form.shortcode} 
+                onChange={(e) => updateField('shortcode', e.target.value)} 
+                className="mt-1 w-full md:w-1/2" 
+                required 
+              />
+            </div>
+
+            {/* Consumer Key */}
+            <div className="md:col-span-2">
+              <Label htmlFor="consumerKey">Daraja Consumer Key</Label>
+              <Input 
+                id="consumerKey" 
+                placeholder="Enter your Daraja Application Consumer Key"
+                value={form.consumerKey} 
+                onChange={(e) => updateField('consumerKey', e.target.value)} 
+                className="mt-1" 
+                required 
+              />
+            </div>
+
+            {/* Consumer Secret (With Eye Toggle Visibility) */}
+            <div className="md:col-span-2">
+              <Label htmlFor="consumerSecret">Daraja Consumer Secret</Label>
+              <div className="relative mt-1">
+                <Input 
+                  id="consumerSecret" 
+                  type={showSecret ? "text" : "password"}
+                  placeholder="Enter your Daraja Application Consumer Secret"
+                  value={form.consumerSecret} 
+                  onChange={(e) => updateField('consumerSecret', e.target.value)} 
+                  className="pr-10"
+                  required 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSecret(!showSecret)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Lipa Na M-Pesa Passkey (With Eye Toggle Visibility) */}
+            <div className="md:col-span-2">
+              <Label htmlFor="passkey">Lipa Na M-Pesa Passkey</Label>
+              <div className="relative mt-1">
+                <Input 
+                  id="passkey" 
+                  type={showPasskey ? "text" : "password"}
+                  placeholder="bfb292729c1234..."
+                  value={form.passkey} 
+                  onChange={(e) => updateField('passkey', e.target.value)} 
+                  className="pr-10"
+                  required 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasskey(!showPasskey)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  {showPasskey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Security Disclaimer Banner */}
+      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex gap-3 text-amber-800 text-xs items-start">
+        <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+        <div>
+          <span className="font-semibold">Security Warning:</span> Your Daraja API credentials grant access to initiate programmatic requests. Ensure these fields match your production application configuration perfectly. Credentials are heavily encrypted before database storage.
+        </div>
+      </div>
+
+      {/* Footer Controls */}
+      <div className="flex items-center justify-between">
+        {saved ? <SavedBanner /> : <span />}
+        <Button type="submit" disabled={loading}>
+          <Save className="w-4 h-4 mr-2" />
+          {loading ? 'Saving Setup...' : 'Save Configuration'}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+
 /* ── Root ── */
 export default function Settings() {
   const { user } = useAuth();
