@@ -97,16 +97,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await authApi.login(email, password);
 
       // Handle API response indicating 2FA requirement
-        if (res.requires2FA) {
-          const found = DEMO_USERS.find((candidate) => candidate.email === email);
-          if (found) {
-            const { password: _password, ...pendingUser } = found;
-            setPendingDemoUser(pendingUser);
-          }
+      if (res.requires2FA || res.requiresTwoFactor) {
+        if (res.challengeId) {
+          save('hms_2fa_challenge_id', res.challengeId);
+        }
+        if (res.tenant?.id) {
+          save('hms_tenant_id', res.tenant.id);
+        }
+        const found = DEMO_USERS.find((candidate) => candidate.email === email);
+        if (found) {
+          const { password: _password, ...pendingUser } = found;
+          setPendingDemoUser(pendingUser);
+        } else {
+          setPendingDemoUser({ email, name: email, role: 'Staff' });
+        }
         return { ok: true, requires2FA: true };
       }
 
       if (res.success && res.user) {
+        if (res.tenant?.id) {
+          save('hms_tenant_id', res.tenant.id);
+        }
         const userData: AuthUser = {
           id: res.user.id,
           name: res.user.name,
@@ -114,15 +125,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role: res.user.role,
           avatarUrl: res.user.avatarUrl,
         };
-        if (res.token) save('hms_session_id', res.token);
-        save('hms_user', userData);
-        setUser(userData);
-        if (!trialStart) {
-          const now = new Date().toISOString();
-          save('hms_trial_start', now);
-          setTrialStart(now);
-        }
+        completeAuth(userData, res.token);
         return { ok: true };
+      }
+      if (res.message && !res.success) {
+        return { ok: false, error: res.message };
       }
     } catch (e) {
       console.warn('Backend login fallback to local demo users');
@@ -136,21 +143,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPendingDemoUser(userData);
       return { ok: true, requires2FA: true };
     }
-    save('hms_session_id', `local-${Date.now()}`);
-    save('hms_user', userData);
-    setUser(userData);
-    if (!trialStart) {
-      const now = new Date().toISOString();
-      save('hms_trial_start', now);
-      setTrialStart(now);
-    }
+    completeAuth(userData, `local-${Date.now()}`);
     return { ok: true };
-  }, [trialStart]);
+  }, [completeAuth]);
 
   const verify2FA = useCallback(async (email: string, code: string): Promise<AuthResult> => {
+    const challengeId = localStorage.getItem('hms_2fa_challenge_id') || undefined;
     try {
-      const res = await authApi.verify2FA(email, code);
+      const res = await authApi.verify2FA(email, code, challengeId);
       if (res.success && res.user) {
+        if (res.tenant?.id) {
+          save('hms_tenant_id', res.tenant.id);
+        }
         completeAuth({
           id: res.user.id,
           name: res.user.name,
@@ -158,10 +162,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role: res.user.role,
           avatarUrl: res.user.avatarUrl,
         }, res.token);
+        localStorage.removeItem('hms_2fa_challenge_id');
         setPendingDemoUser(null);
         return { ok: true };
       }
-      if (res.error) return { ok: false, error: res.error };
+      if (res.error || res.message) return { ok: false, error: res.error || res.message };
     } catch {
       console.warn('Backend 2FA unavailable; using demo verification.');
     }
@@ -173,6 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { ok: false, error: 'Invalid verification code. Demo code: 123456' };
     }
     completeAuth(pendingDemoUser, `local-${Date.now()}`);
+    localStorage.removeItem('hms_2fa_challenge_id');
     setPendingDemoUser(null);
     return { ok: true };
   }, [completeAuth, pendingDemoUser]);
@@ -182,6 +188,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (sessionId && !sessionId.startsWith('local-')) authApi.logout(sessionId).catch(() => undefined);
     localStorage.removeItem('hms_user');
     localStorage.removeItem('hms_session_id');
+    localStorage.removeItem('hms_tenant_id');
+    localStorage.removeItem('hms_2fa_challenge_id');
     setUser(null);
   }, []);
 

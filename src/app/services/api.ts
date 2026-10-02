@@ -217,10 +217,12 @@ function setLocalValue(key: string, value: unknown) {
 }
 
 async function fetchJson<T>(url: string, options?: RequestInit, fallbackData?: T): Promise<T> {
+  const tenantId = localStorage.getItem('hms_tenant_id');
   try {
     const res = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
+        ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
         ...options?.headers,
       },
       ...options,
@@ -488,6 +490,13 @@ export const transactionApi = {
     );
   },
 
+  async sendPatientStkPush(id: string, phoneNumber?: string, amount?: number): Promise<{ success: boolean; checkoutRequestId?: string; customerMessage?: string; message?: string }> {
+    return fetchJson<{ success: boolean; checkoutRequestId?: string; customerMessage?: string; message?: string }>(
+      `${BASE_URL}/transactions/${id}/stk-push`,
+      { method: 'POST', body: JSON.stringify({ phoneNumber, amount }) }
+    );
+  },
+
   async delete(id: string): Promise<boolean> {
     try {
       await fetch(`${BASE_URL}/transactions/${id}`, { method: 'DELETE' });
@@ -589,21 +598,25 @@ export const staffApi = {
 
 export const authApi = {
   async login(email: string, password?: string) {
-    return fetchJson<{ success: boolean; requires2FA?: boolean; user?: any; token?: string; message?: string }>(
+    return fetchJson<{ success: boolean; requires2FA?: boolean; requiresTwoFactor?: boolean; challengeId?: string; user?: any; token?: string; tenant?: any; message?: string }>(
       `${BASE_URL}/auth/login`,
       { method: 'POST', body: JSON.stringify({ email, password }) },
     );
   },
 
-  async verify2FA(email: string, code: string) {
-    return fetchJson<{ success: boolean; user?: any; token?: string; error?: string }>(
+  async verify2FA(email: string, code: string, challengeId?: string) {
+    return fetchJson<{ success: boolean; user?: any; token?: string; tenant?: any; error?: string; message?: string }>(
       `${BASE_URL}/auth/verify-2fa`,
-      { method: 'POST', body: JSON.stringify({ email, code }) },
+      { method: 'POST', body: JSON.stringify({ email, code, challengeId }) },
     );
   },
 
   async logout(sessionId: string): Promise<void> {
-    await fetch(`${BASE_URL}/sessions/${sessionId}`, { method: 'DELETE' });
+    await fetch(`${BASE_URL}/auth/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId }),
+    }).catch(() => undefined);
   },
 };
 
@@ -621,6 +634,21 @@ export const mpesaApi = {
     return fetchJson<{ checkoutRequestId: string; customerMessage?: string }>(
       `${BASE_URL}/payments/mpesa/stk-push`,
       { method: 'POST', body: JSON.stringify(request) }
+    );
+  },
+
+  async getTenantMpesaConfig(): Promise<{ shortcode: string; consumerKey: string; consumerSecret: string; passkey: string; type: string; isConfigured: boolean }> {
+    return fetchJson<{ shortcode: string; consumerKey: string; consumerSecret: string; passkey: string; type: string; isConfigured: boolean }>(
+      `${BASE_URL}/settings/mpesa`,
+      undefined,
+      { shortcode: '', consumerKey: '', consumerSecret: '', passkey: '', type: 'PAYBILL', isConfigured: false }
+    );
+  },
+
+  async saveTenantMpesaConfig(config: { shortcode: string; consumerKey: string; consumerSecret: string; passkey: string; type: string }): Promise<{ success: boolean; message: string }> {
+    return fetchJson<{ success: boolean; message: string }>(
+      `${BASE_URL}/settings/mpesa`,
+      { method: 'PUT', body: JSON.stringify(config) }
     );
   },
 };

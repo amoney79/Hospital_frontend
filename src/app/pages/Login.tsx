@@ -33,15 +33,17 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
+    const emailVal = (f.get('email') as string)?.trim();
+    setEmail(emailVal);
     setError('');
     setLoading(true);
     try {
-      const result = await login(f.get('email') as string, f.get('password') as string);
+      const result = await login(emailVal, f.get('password') as string);
 
-      if(result.requires2FA){
+      if (result.requires2FA) {
         // Transition to 2FA Step
         setStep('2fa');
-      }else if (!result.ok) {
+      } else if (!result.ok) {
         setError(result.error ?? 'Login failed.');
       }
     } catch {
@@ -74,19 +76,21 @@ export default function Login() {
     setLoading(true);
     setTenantMessage('');
     const form = new FormData(e.currentTarget);
+    const adminEmail = String(form.get('adminEmail')).trim().toLowerCase();
     try {
       const result = await tenantApi.register({
         hospitalName: String(form.get('hospitalName')),
         slug: String(form.get('slug')),
         adminName: String(form.get('adminName')),
-        adminEmail: String(form.get('adminEmail')),
+        adminEmail: adminEmail,
         password: String(form.get('tenantPassword')),
         phone: String(form.get('tenantPhone')),
       });
-      setTenantMessage(`${result.message} Your tenant database is ready.`);
-      e.currentTarget.reset();
-    } catch {
-      setTenantMessage('Tenant registration requires the backend tenant provisioning service.');
+      setTenantMessage(`${result.message} You can now log in with your credentials.`);
+      setEmail(adminEmail);
+      setTimeout(() => setShowTenantForm(false), 1500);
+    } catch (err: any) {
+      setTenantMessage(err?.message || 'Tenant registration requires the backend tenant provisioning service.');
     } finally {
       setLoading(false);
     }

@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../components/ui/textarea';
 import { Switch } from '../components/ui/switch';
 import { useHospitalSettings } from '../context/HospitalSettingsContext';
-import { HospitalSettings, SystemUser, UserSession, securityApi, usersApi } from '../services/api';
+import { HospitalSettings, SystemUser, UserSession, securityApi, usersApi, mpesaApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { normalizeRole } from '../roleAccess';
 
@@ -730,8 +730,17 @@ function MpesaSettings() {
 
   // Fetch existing config on mount
   useEffect(() => {
-    // Replace with your real service layer call: e.g., paymentApi.getMpesaConfig()
-    // It should hit your GET /api/v1/payments/status/{clientId} endpoint
+    mpesaApi.getTenantMpesaConfig().then((data) => {
+      if (data) {
+        setForm({
+          shortcode: data.shortcode || '',
+          consumerKey: data.consumerKey || '',
+          consumerSecret: data.consumerSecret || '',
+          passkey: data.passkey || '',
+          type: data.type || 'PAYBILL',
+        });
+      }
+    }).catch((err) => console.warn('Could not load tenant M-Pesa config:', err));
   }, []);
 
   const updateField = (key: string, value: string) => {
@@ -742,9 +751,7 @@ function MpesaSettings() {
     e.preventDefault();
     setLoading(true);
     try {
-      // Replace with your real service layer API post request:
-      // await paymentApi.saveMpesaConfig(form);
-      
+      await mpesaApi.saveTenantMpesaConfig(form);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {

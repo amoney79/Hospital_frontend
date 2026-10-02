@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Wallet, Download, Eye } from 'lucide-react';
+import { Plus, Search, Wallet, Download, Eye, Smartphone, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -18,6 +18,10 @@ export default function Transactions() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [paymentTransaction, setPaymentTransaction] = useState<Transaction | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [mpesaPhone, setMpesaPhone] = useState('');
+  const [mpesaLoading, setMpesaLoading] = useState(false);
+  const [mpesaStatus, setMpesaStatus] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
   useEffect(() => {
     transactionApi.getAll().then(setTransactions).catch(() => setTransactions(mockTransactions));
@@ -61,9 +65,56 @@ export default function Transactions() {
 
     const formData = new FormData(e.currentTarget);
     const paymentAmount = Number(formData.get('paymentAmount'));
-    const paymentMethod = formData.get('paymentMethod') as Transaction['paymentMethod'];
+    const method = paymentMethod as Transaction['paymentMethod'];
 
-    const updated = await transactionApi.recordPayment(paymentTransaction.id, paymentAmount, paymentMethod);
+    if (method === 'Mpesa') {
+      // M-Pesa STK Push flow
+      if (!mpesaPhone) {
+        setMpesaStatus({ type: 'error', message: 'Please enter the patient\'s M-Pesa phone number.' });
+        return;
+      }
+
+      setMpesaLoading(true);
+      setMpesaStatus({ type: 'info', message: 'Sending M-Pesa prompt to patient\'s phone...' });
+
+      try {
+        const result = await transactionApi.sendPatientStkPush(
+          paymentTransaction.id,
+          mpesaPhone,
+          paymentAmount
+        );
+
+        if (result.success) {
+          setMpesaStatus({
+            type: 'success',
+            message: result.customerMessage || 'STK Push sent! Ask the patient to enter their M-Pesa PIN on their phone.',
+          });
+          // Refresh transactions after a short delay to pick up M-Pesa callback updates
+          setTimeout(async () => {
+            try {
+              const refreshed = await transactionApi.getAll();
+              setTransactions(refreshed);
+            } catch { /* ignore */ }
+          }, 5000);
+        } else {
+          setMpesaStatus({
+            type: 'error',
+            message: result.message || 'Failed to initiate M-Pesa payment. Ensure M-Pesa is configured in Settings.',
+          });
+        }
+      } catch (err: any) {
+        setMpesaStatus({
+          type: 'error',
+          message: err?.message || 'Failed to send M-Pesa STK push. Check your M-Pesa settings.',
+        });
+      } finally {
+        setMpesaLoading(false);
+      }
+      return;
+    }
+
+    // Standard payment flow (Cash, Insurance, Bank Transfer, etc.)
+    const updated = await transactionApi.recordPayment(paymentTransaction.id, paymentAmount, method);
 
     setTransactions(transactions.map((t) => (t.id === paymentTransaction.id ? { ...t, ...updated } : t)));
     setIsPaymentDialogOpen(false);
@@ -289,6 +340,10 @@ export default function Transactions() {
                             size="sm"
                             onClick={() => {
                               setPaymentTransaction(transaction);
+                              setPaymentMethod('Cash');
+                              setMpesaPhone('');
+                              setMpesaStatus(null);
+                              setMpesaLoading(false);
                               setIsPaymentDialogOpen(true);
                             }}
                           >
