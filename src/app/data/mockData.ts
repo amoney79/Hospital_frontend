@@ -79,7 +79,7 @@ export interface Transaction {
   description: string;
   amount: number;
   amountPaid: number;
-  paymentMethod: 'Cash' | 'Credit Card' | 'Debit Card' | 'Insurance' | 'Bank Transfer';
+  paymentMethod: 'Cash' | 'Mpesa';
   status: 'paid' | 'pending' | 'overdue' | 'partial';
 }
 
@@ -483,7 +483,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Regular cardiac check-up and ECG test',
     amount: 350.00,
     amountPaid: 350.00,
-    paymentMethod: 'Credit Card',
+    paymentMethod: 'Cash',
     status: 'paid'
   },
   {
@@ -497,7 +497,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Pediatric consultation and vaccination',
     amount: 180.00,
     amountPaid: 180.00,
-    paymentMethod: 'Insurance',
+    paymentMethod: 'Mpesa',
     status: 'paid'
   },
   {
@@ -511,7 +511,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Knee arthroscopy and post-surgery care',
     amount: 2500.00,
     amountPaid: 1500.00,
-    paymentMethod: 'Bank Transfer',
+    paymentMethod: 'Mpesa',
     status: 'partial'
   },
   {
@@ -539,7 +539,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Blood work and cholesterol screening',
     amount: 150.00,
     amountPaid: 0,
-    paymentMethod: 'Debit Card',
+    paymentMethod: 'Cash',
     status: 'pending'
   },
   {
@@ -553,7 +553,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Emergency room visit and treatment',
     amount: 450.00,
     amountPaid: 450.00,
-    paymentMethod: 'Credit Card',
+    paymentMethod: 'Mpesa',
     status: 'paid'
   }
 ];
