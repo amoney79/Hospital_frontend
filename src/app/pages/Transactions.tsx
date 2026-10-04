@@ -65,7 +65,7 @@ export default function Transactions() {
 
     const formData = new FormData(e.currentTarget);
     const paymentAmount = Number(formData.get('paymentAmount'));
-    const method = paymentMethod as Transaction['paymentMethod'];
+    const method = paymentMethod;
 
     if (method === 'Mpesa') {
       // M-Pesa STK Push flow
@@ -114,7 +114,11 @@ export default function Transactions() {
     }
 
     // Standard payment flow (Cash, Insurance, Bank Transfer, etc.)
-    const updated = await transactionApi.recordPayment(paymentTransaction.id, paymentAmount, method);
+    const updated = await transactionApi.recordPayment(
+      paymentTransaction.id,
+      paymentAmount,
+      method as Transaction['paymentMethod']
+    );
 
     setTransactions(transactions.map((t) => (t.id === paymentTransaction.id ? { ...t, ...updated } : t)));
     setIsPaymentDialogOpen(false);
