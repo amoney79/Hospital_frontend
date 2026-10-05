@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Wallet, Download, Eye, Smartphone, Loader2 } from 'lucide-react';
+import { Plus, Search, Wallet, Download, Eye, Smartphone, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -18,10 +18,21 @@ export default function Transactions() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [paymentTransaction, setPaymentTransaction] = useState<Transaction | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [paymentMethod, setPaymentMethod] = useState('Mpesa');
   const [mpesaPhone, setMpesaPhone] = useState('');
   const [mpesaLoading, setMpesaLoading] = useState(false);
   const [mpesaStatus, setMpesaStatus] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+
+  const openPaymentDialog = (transaction: Transaction) => {
+    const patient = mockPatients.find((p) => p.id === transaction.patientId);
+    const defaultPhone = transaction.patientPhone || patient?.phone || '';
+    setPaymentTransaction(transaction);
+    setPaymentMethod('Mpesa');
+    setMpesaPhone(defaultPhone);
+    setMpesaStatus(null);
+    setMpesaLoading(false);
+    setIsPaymentDialogOpen(true);
+  };
 
   useEffect(() => {
     transactionApi.getAll().then(setTransactions).catch(() => setTransactions(mockTransactions));
@@ -64,38 +75,47 @@ export default function Transactions() {
     if (!paymentTransaction) return;
 
     const formData = new FormData(e.currentTarget);
-    const paymentAmount = Number(formData.get('paymentAmount'));
+    const balanceDue = paymentTransaction.amount - paymentTransaction.amountPaid;
+    const paymentAmount = Number(formData.get('paymentAmount')) || balanceDue;
     const method = paymentMethod;
 
     if (method === 'Mpesa') {
-      // M-Pesa STK Push flow
-      if (!mpesaPhone) {
-        setMpesaStatus({ type: 'error', message: 'Please enter the patient\'s M-Pesa phone number.' });
+      // M-Pesa Daraja STK Push flow
+      if (!mpesaPhone.trim()) {
+        setMpesaStatus({ type: 'error', message: 'Please enter the patient\'s M-Pesa mobile number.' });
         return;
       }
 
       setMpesaLoading(true);
-      setMpesaStatus({ type: 'info', message: 'Sending M-Pesa prompt to patient\'s phone...' });
+      setMpesaStatus({ type: 'info', message: `Sending Lipa Na M-Pesa STK Push prompt to ${mpesaPhone}...` });
 
       try {
         const result = await transactionApi.sendPatientStkPush(
           paymentTransaction.id,
-          mpesaPhone,
+          mpesaPhone.trim(),
           paymentAmount
         );
 
         if (result.success) {
           setMpesaStatus({
             type: 'success',
-            message: result.customerMessage || 'STK Push sent! Ask the patient to enter their M-Pesa PIN on their phone.',
+            message: result.customerMessage || `STK Push prompt sent to ${mpesaPhone}! Please ask the client to check their phone and enter their M-Pesa PIN.`,
           });
-          // Refresh transactions after a short delay to pick up M-Pesa callback updates
+          // Update transaction in local state with pending M-Pesa details
+          setTransactions((prev) =>
+            prev.map((t) =>
+              t.id === paymentTransaction.id
+                ? { ...t, paymentMethod: 'Mpesa', patientPhone: mpesaPhone.trim(), status: 'pending' }
+                : t
+            )
+          );
+          // Refresh transactions after a short delay
           setTimeout(async () => {
             try {
               const refreshed = await transactionApi.getAll();
               setTransactions(refreshed);
             } catch { /* ignore */ }
-          }, 5000);
+          }, 6000);
         } else {
           setMpesaStatus({
             type: 'error',
@@ -120,7 +140,7 @@ export default function Transactions() {
       method as Transaction['paymentMethod']
     );
 
-    setTransactions(transactions.map((t) => (t.id === paymentTransaction.id ? { ...t, ...updated } : t)));
+    setTransactions((prev) => prev.map((t) => (t.id === paymentTransaction.id ? { ...t, ...updated } : t)));
     setIsPaymentDialogOpen(false);
     setPaymentTransaction(null);
   };
@@ -342,14 +362,8 @@ export default function Transactions() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              setPaymentTransaction(transaction);
-                              setPaymentMethod('Cash');
-                              setMpesaPhone('');
-                              setMpesaStatus(null);
-                              setMpesaLoading(false);
-                              setIsPaymentDialogOpen(true);
-                            }}
+                            title="Process payment"
+                            onClick={() => openPaymentDialog(transaction)}
                           >
                             <Wallet className="w-4 h-4" />
                           </Button>
@@ -404,8 +418,28 @@ export default function Transactions() {
                 </div>
                 <div>
                   <Label>Payment Method</Label>
-                  <p className="font-medium">{selectedTransaction.paymentMethod}</p>
+                  <div className="mt-0.5">
+                    {selectedTransaction.paymentMethod === 'Mpesa' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                        <Smartphone className="w-3 h-3" /> Lipa Na M-Pesa
+                      </span>
+                    ) : (
+                      <p className="font-medium">{selectedTransaction.paymentMethod}</p>
+                    )}
+                  </div>
                 </div>
+                {selectedTransaction.patientPhone && (
+                  <div>
+                    <Label>M-Pesa Mobile Number</Label>
+                    <p className="font-medium text-gray-800 font-mono text-sm mt-0.5">{selectedTransaction.patientPhone}</p>
+                  </div>
+                )}
+                {selectedTransaction.mpesaReceiptNumber && (
+                  <div>
+                    <Label>M-Pesa Receipt No.</Label>
+                    <p className="font-semibold text-emerald-700 font-mono text-sm mt-0.5">{selectedTransaction.mpesaReceiptNumber}</p>
+                  </div>
+                )}
                 <div>
                   <Label>Amount</Label>
                   <p className="text-lg font-semibold">Ksh {selectedTransaction.amount.toFixed(2)}</p>
@@ -488,13 +522,14 @@ export default function Transactions() {
 
               <div>
                 <Label htmlFor="paymentMethod">Payment Method</Label>
-                <Select name="paymentMethod" defaultValue="Cash">
-                  <SelectTrigger>
+                <Select value={paymentMethod} onValueChange={(val) => { setPaymentMethod(val); setMpesaStatus(null); }}>
+                  <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="Mpesa">Lipa Na M-Pesa (Daraja STK Push)</SelectItem>
                     <SelectItem value="Cash">Cash</SelectItem>
-                    <SelectItem value="Credit Card">Mpesa</SelectItem>
+                    <SelectItem value="Credit Card">Credit Card</SelectItem>
                     <SelectItem value="Debit Card">Debit Card</SelectItem>
                     <SelectItem value="Insurance">Insurance</SelectItem>
                     <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
@@ -502,18 +537,81 @@ export default function Transactions() {
                 </Select>
               </div>
 
-              <div className="flex justify-end gap-2">
+              {paymentMethod === 'Mpesa' && (
+                <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-3">
+                  <div className="flex items-center gap-2 text-emerald-900 font-semibold text-sm">
+                    <Smartphone className="w-4 h-4 text-emerald-700" />
+                    Automated Daraja STK Push Prompt
+                  </div>
+                  <p className="text-xs text-emerald-800">
+                    A secure M-Pesa STK Push prompt will be dispatched directly to the client's phone requesting their PIN to complete payment.
+                  </p>
+
+                  <div>
+                    <Label htmlFor="mpesaPhone" className="text-xs font-medium text-emerald-950">Patient M-Pesa Phone Number</Label>
+                    <Input
+                      id="mpesaPhone"
+                      placeholder="e.g., 0712345678 or 2547XXXXXXXX"
+                      value={mpesaPhone}
+                      onChange={(e) => setMpesaPhone(e.target.value)}
+                      className="mt-1 bg-white font-mono text-sm"
+                      required
+                    />
+                    <p className="text-[11px] text-emerald-700 mt-1">
+                      Safaricom mobile number registered for M-Pesa.
+                    </p>
+                  </div>
+
+                  {mpesaStatus && (
+                    <div className={`p-3 rounded-lg text-xs flex items-start gap-2 ${
+                      mpesaStatus.type === 'success'
+                        ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                        : mpesaStatus.type === 'error'
+                        ? 'bg-red-50 text-red-800 border border-red-200'
+                        : 'bg-blue-50 text-blue-800 border border-blue-200'
+                    }`}>
+                      {mpesaStatus.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />}
+                      {mpesaStatus.type === 'error' && <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />}
+                      {mpesaStatus.type === 'info' && <Loader2 className="w-4 h-4 text-blue-600 animate-spin shrink-0 mt-0.5" />}
+                      <span className="leading-relaxed font-medium">{mpesaStatus.message}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => {
                     setIsPaymentDialogOpen(false);
                     setPaymentTransaction(null);
+                    setMpesaStatus(null);
                   }}
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Process Payment</Button>
+                {paymentMethod === 'Mpesa' ? (
+                  <Button
+                    type="submit"
+                    disabled={mpesaLoading || !mpesaPhone.trim()}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                  >
+                    {mpesaLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Sending STK Push...
+                      </>
+                    ) : (
+                      <>
+                        <Smartphone className="w-4 h-4 mr-2" />
+                        Send M-Pesa Prompt to Client
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button type="submit">Process Payment</Button>
+                )}
               </div>
             </form>
           )}

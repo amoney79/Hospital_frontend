@@ -228,7 +228,9 @@ async function fetchJson<T>(url: string, options?: RequestInit, fallbackData?: T
       ...options,
     });
     if (!res.ok) {
-      throw new Error(`HTTP error! Status: ${res.status}`);
+      const errorJson = await res.json().catch(() => null);
+      const msg = errorJson?.message || errorJson?.error || `HTTP error! Status: ${res.status}`;
+      throw new Error(msg);
     }
     return (await res.json()) as T;
   } catch (error) {
@@ -637,15 +639,15 @@ export const mpesaApi = {
     );
   },
 
-  async getTenantMpesaConfig(): Promise<{ shortcode: string; consumerKey: string; consumerSecret: string; passkey: string; type: string; isConfigured: boolean }> {
-    return fetchJson<{ shortcode: string; consumerKey: string; consumerSecret: string; passkey: string; type: string; isConfigured: boolean }>(
+  async getTenantMpesaConfig(): Promise<{ shortcode: string; consumerKey: string; consumerSecret: string; passkey: string; type: string; callbackUrl?: string; isConfigured: boolean }> {
+    return fetchJson<{ shortcode: string; consumerKey: string; consumerSecret: string; passkey: string; type: string; callbackUrl?: string; isConfigured: boolean }>(
       `${BASE_URL}/settings/mpesa`,
       undefined,
-      { shortcode: '', consumerKey: '', consumerSecret: '', passkey: '', type: 'PAYBILL', isConfigured: false }
+      { shortcode: '', consumerKey: '', consumerSecret: '', passkey: '', type: 'PAYBILL', callbackUrl: '', isConfigured: false }
     );
   },
 
-  async saveTenantMpesaConfig(config: { shortcode: string; consumerKey: string; consumerSecret: string; passkey: string; type: string }): Promise<{ success: boolean; message: string }> {
+  async saveTenantMpesaConfig(config: { shortcode: string; consumerKey: string; consumerSecret: string; passkey: string; type: string; callbackUrl?: string }): Promise<{ success: boolean; message: string }> {
     return fetchJson<{ success: boolean; message: string }>(
       `${BASE_URL}/settings/mpesa`,
       { method: 'PUT', body: JSON.stringify(config) }

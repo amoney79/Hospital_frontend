@@ -715,7 +715,10 @@ function SecuritySettings() {
 /* ── M-Pesa Integration Settings ── */
 function MpesaSettings() {
   const [saved, setSaved] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [showPasskey, setShowPasskey] = useState(false);
 
@@ -726,18 +729,21 @@ function MpesaSettings() {
     consumerSecret: '',
     passkey: '',
     type: 'PAYBILL', // Default selection
+    callbackUrl: '',
   });
 
   // Fetch existing config on mount
   useEffect(() => {
     mpesaApi.getTenantMpesaConfig().then((data) => {
       if (data) {
+        setIsConfigured(Boolean(data.isConfigured));
         setForm({
           shortcode: data.shortcode || '',
           consumerKey: data.consumerKey || '',
           consumerSecret: data.consumerSecret || '',
           passkey: data.passkey || '',
           type: data.type || 'PAYBILL',
+          callbackUrl: data.callbackUrl || '',
         });
       }
     }).catch((err) => console.warn('Could not load tenant M-Pesa config:', err));
@@ -750,12 +756,28 @@ function MpesaSettings() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage('');
+    setSaveMessage('');
     try {
-      await mpesaApi.saveTenantMpesaConfig(form);
+      const res = await mpesaApi.saveTenantMpesaConfig(form);
+      setIsConfigured(true);
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (error) {
-      console.error("Failed to save M-Pesa credentials", error);
+      setSaveMessage(res.message || 'M-Pesa credentials encrypted & saved successfully in the database.');
+      // Refresh to ensure masks (****) are reflected
+      const refreshed = await mpesaApi.getTenantMpesaConfig().catch(() => null);
+      if (refreshed) {
+        setIsConfigured(Boolean(refreshed.isConfigured));
+        setForm((prev) => ({
+          ...prev,
+          consumerKey: refreshed.consumerKey || '****',
+          consumerSecret: refreshed.consumerSecret || '****',
+          passkey: refreshed.passkey || '****',
+        }));
+      }
+      setTimeout(() => setSaved(false), 4000);
+    } catch (error: any) {
+      console.error('Failed to save M-Pesa credentials', error);
+      setErrorMessage(error?.message || 'Failed to save and encrypt M-Pesa credentials.');
     } finally {
       setLoading(false);
     }
@@ -763,6 +785,32 @@ function MpesaSettings() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Live Status Header */}
+      <div className={`p-4 rounded-xl border flex items-start gap-3.5 ${
+        isConfigured
+          ? 'bg-green-50/70 border-green-200 text-green-900'
+          : 'bg-amber-50 border-amber-200 text-amber-900'
+      }`}>
+        <div className={`p-2 rounded-lg shrink-0 ${isConfigured ? 'bg-green-600 text-white' : 'bg-amber-500 text-white'}`}>
+          <ShieldCheck className="w-5 h-5" />
+        </div>
+        <div className="flex-1 text-sm">
+          <div className="flex items-center gap-2 font-semibold text-base">
+            <span>{isConfigured ? 'M-Pesa STK Push Gateway: Active & Encrypted' : 'M-Pesa STK Push Gateway: Not Yet Configured'}</span>
+            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+              isConfigured ? 'bg-green-200 text-green-800' : 'bg-amber-200 text-amber-800'
+            }`}>
+              {isConfigured ? 'AES-256 ENCRYPTED' : 'SETUP REQUIRED'}
+            </span>
+          </div>
+          <p className="mt-1 text-xs opacity-90 leading-relaxed">
+            {isConfigured
+              ? 'Daraja credentials are encrypted in the database. Secrets are masked as ****. When a client pays via M-Pesa in Transactions, an automated STK Push prompt is sent directly to their phone.'
+              : 'Enter your Safaricom Daraja Lipa Na M-Pesa API credentials below. Once saved, they are heavily encrypted and used automatically during transaction checkout.'}
+          </p>
+        </div>
+      </div>
+
       <SectionCard title="Lipa Na M-Pesa Gateway Settings">
         <div className="space-y-4">
           
@@ -779,7 +827,7 @@ function MpesaSettings() {
               </SelectContent>
             </Select>
             <p className="text-xs text-gray-500 mt-1">
-              Choose &quot;Paybill&quot; if you use an account number rule, or &quot;Buy Goods Till&quot; for direct retail merchant codes.
+              Choose &quot;Paybill&quot; if you use an account number rule, or &quot;Buy Goods Till&quot; for direct retail merchant shortcodes.
             </p>
           </div>
 
@@ -789,12 +837,15 @@ function MpesaSettings() {
               <Label htmlFor="shortcode">M-Pesa Business Shortcode</Label>
               <Input 
                 id="shortcode" 
-                placeholder="e.g., 4029321" 
+                placeholder="e.g., 174379 or your Paybill/Till number" 
                 value={form.shortcode} 
                 onChange={(e) => updateField('shortcode', e.target.value)} 
                 className="mt-1 w-full md:w-1/2" 
                 required 
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Your 5-7 digit Safaricom business shortcode.
+              </p>
             </div>
 
             {/* Consumer Key */}
@@ -805,9 +856,12 @@ function MpesaSettings() {
                 placeholder="Enter your Daraja Application Consumer Key"
                 value={form.consumerKey} 
                 onChange={(e) => updateField('consumerKey', e.target.value)} 
-                className="mt-1" 
+                className="mt-1 font-mono text-sm" 
                 required 
               />
+              <p className="text-xs text-gray-400 mt-0.5">
+                Masked as **** in the database. Leave **** to retain existing key, or replace with new value.
+              </p>
             </div>
 
             {/* Consumer Secret (With Eye Toggle Visibility) */}
@@ -820,7 +874,7 @@ function MpesaSettings() {
                   placeholder="Enter your Daraja Application Consumer Secret"
                   value={form.consumerSecret} 
                   onChange={(e) => updateField('consumerSecret', e.target.value)} 
-                  className="pr-10"
+                  className="pr-10 font-mono text-sm" 
                   required 
                 />
                 <button
@@ -831,11 +885,14 @@ function MpesaSettings() {
                   {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Heavily encrypted before storage. Masked as ****.
+              </p>
             </div>
 
             {/* Lipa Na M-Pesa Passkey (With Eye Toggle Visibility) */}
             <div className="md:col-span-2">
-              <Label htmlFor="passkey">Lipa Na M-Pesa Passkey</Label>
+              <Label htmlFor="passkey">Lipa Na M-Pesa Online Passkey</Label>
               <div className="relative mt-1">
                 <Input 
                   id="passkey" 
@@ -843,7 +900,7 @@ function MpesaSettings() {
                   placeholder="bfb292729c1234..."
                   value={form.passkey} 
                   onChange={(e) => updateField('passkey', e.target.value)} 
-                  className="pr-10"
+                  className="pr-10 font-mono text-sm" 
                   required 
                 />
                 <button
@@ -854,6 +911,24 @@ function MpesaSettings() {
                   {showPasskey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              <p className="text-xs text-gray-400 mt-0.5">
+                The Safaricom Daraja Online Passkey used to generate the password for STK Push.
+              </p>
+            </div>
+
+            {/* Callback URL */}
+            <div className="md:col-span-2">
+              <Label htmlFor="callbackUrl">STK Push Callback Webhook URL (Optional)</Label>
+              <Input 
+                id="callbackUrl" 
+                placeholder="https://mydomain.com/mpesa-express-simulate/"
+                value={form.callbackUrl} 
+                onChange={(e) => updateField('callbackUrl', e.target.value)} 
+                className="mt-1" 
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Safaricom sends the instant payment confirmation response to this URL. Leave blank for default sandbox/production handler.
+              </p>
             </div>
 
           </div>
@@ -861,25 +936,35 @@ function MpesaSettings() {
       </SectionCard>
 
       {/* Security Disclaimer Banner */}
-      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex gap-3 text-amber-800 text-xs items-start">
-        <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+      <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-lg flex gap-3 text-blue-900 text-xs items-start">
+        <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
         <div>
-          <span className="font-semibold">Security Warning:</span> Your Daraja API credentials grant access to initiate programmatic requests. Ensure these fields match your production application configuration perfectly. Credentials are heavily encrypted before database storage.
+          <span className="font-semibold">Database Security:</span> All Daraja secrets are encrypted with AES-256-GCM authenticated cipher before saving to MongoDB. Secrets are never exposed in plain text in network responses and are displayed masked as (****).
         </div>
       </div>
 
+      {errorMessage && (
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
+          {errorMessage}
+        </div>
+      )}
+
       {/* Footer Controls */}
       <div className="flex items-center justify-between">
-        {saved ? <SavedBanner /> : <span />}
-        <Button type="submit" disabled={loading}>
+        {saved ? (
+          <div className="flex items-center gap-2 text-green-600 text-sm font-medium animate-in fade-in">
+            <Check className="w-4 h-4" />
+            {saveMessage || 'M-Pesa credentials encrypted & saved!'}
+          </div>
+        ) : <span />}
+        <Button type="submit" disabled={loading} className="bg-green-600 hover:bg-green-700 text-white">
           <Save className="w-4 h-4 mr-2" />
-          {loading ? 'Saving Setup...' : 'Save Configuration'}
+          {loading ? 'Encrypting & Saving...' : 'Save Configuration'}
         </Button>
       </div>
     </form>
   );
 }
-
 
 /* ── Root ── */
 export default function Settings() {
