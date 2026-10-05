@@ -11,19 +11,24 @@ import { mockTransactions, mockPatients, Transaction } from '../data/mockData';
 import { Badge } from '../components/ui/badge';
 import { transactionApi } from '../services/api';
 
+type TransactionWithPaymentInfo = Transaction & {
+  patientPhone?: string;
+  mpesaReceiptNumber?: string;
+};
+
 export default function Transactions() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<TransactionWithPaymentInfo[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithPaymentInfo | null>(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [paymentTransaction, setPaymentTransaction] = useState<Transaction | null>(null);
+  const [paymentTransaction, setPaymentTransaction] = useState<TransactionWithPaymentInfo | null>(null);
   const [paymentMethod, setPaymentMethod] = useState('Mpesa');
   const [mpesaPhone, setMpesaPhone] = useState('');
   const [mpesaLoading, setMpesaLoading] = useState(false);
   const [mpesaStatus, setMpesaStatus] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
-  const openPaymentDialog = (transaction: Transaction) => {
+  const openPaymentDialog = (transaction: TransactionWithPaymentInfo) => {
     const patient = mockPatients.find((p) => p.id === transaction.patientId);
     const defaultPhone = transaction.patientPhone || patient?.phone || '';
     setPaymentTransaction(transaction);
