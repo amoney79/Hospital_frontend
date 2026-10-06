@@ -532,7 +532,7 @@ export default function Transactions() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Mpesa">Lipa Na M-Pesa (Daraja STK Push)</SelectItem>
+                    <SelectItem value="Mpesa">Lipa Na M-Pesa</SelectItem>
                     <SelectItem value="Cash">Cash</SelectItem>
                     <SelectItem value="Credit Card">Credit Card</SelectItem>
                     <SelectItem value="Debit Card">Debit Card</SelectItem>
