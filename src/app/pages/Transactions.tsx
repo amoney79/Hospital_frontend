@@ -542,10 +542,10 @@ export default function Transactions() {
                 <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-3">
                   <div className="flex items-center gap-2 text-emerald-900 font-semibold text-sm">
                     <Smartphone className="w-4 h-4 text-emerald-700" />
-                    Automated Daraja STK Push Prompt
+                    Automated M-Pesa Prompt
                   </div>
                   <p className="text-xs text-emerald-800">
-                    A secure M-Pesa STK Push prompt will be dispatched directly to the client's phone requesting their PIN to complete payment.
+                    A secure M-Pesa prompt will be dispatched directly to the client's phone requesting their PIN to complete payment.
                   </p>
 
                   <div>
@@ -601,7 +601,7 @@ export default function Transactions() {
                     {mpesaLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Sending STK Push...
+                        Sending M-Pesa Prompt...
                       </>
                     ) : (
                       <>
