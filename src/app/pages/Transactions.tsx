@@ -537,7 +537,6 @@ export default function Transactions() {
                     <SelectItem value="Credit Card">Credit Card</SelectItem>
                     <SelectItem value="Debit Card">Debit Card</SelectItem>
                     <SelectItem value="Insurance">Insurance</SelectItem>
-                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
