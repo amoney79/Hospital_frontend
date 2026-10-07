@@ -138,7 +138,7 @@ export default function Transactions() {
       return;
     }
 
-    // Standard payment flow (Cash, Insurance, Bank Transfer, etc.)
+    // Standard payment flow (Cash, Mpesa.)
     const updated = await transactionApi.recordPayment(
       paymentTransaction.id,
       paymentAmount,
@@ -544,9 +544,7 @@ export default function Transactions() {
                     <Smartphone className="w-4 h-4 text-emerald-700" />
                     Automated M-Pesa Prompt
                   </div>
-                  <p className="text-xs text-emerald-800">
-                    A secure M-Pesa prompt will be dispatched directly to the client's phone requesting their PIN to complete payment.
-                  </p>
+                 
 
                   <div>
                     <Label htmlFor="mpesaPhone" className="text-xs font-medium text-emerald-950">Patient M-Pesa Phone Number</Label>
