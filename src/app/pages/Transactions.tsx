@@ -542,10 +542,8 @@ export default function Transactions() {
                 <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-3">
                   <div className="flex items-center gap-2 text-emerald-900 font-semibold text-sm">
                     <Smartphone className="w-4 h-4 text-emerald-700" />
-                    Automated M-Pesa Prompt
+                    M-Pesa Prompt
                   </div>
-                 
-
                   <div>
                     <Label htmlFor="mpesaPhone" className="text-xs font-medium text-emerald-950">Patient M-Pesa Phone Number</Label>
                     <Input
@@ -556,9 +554,7 @@ export default function Transactions() {
                       className="mt-1 bg-white font-mono text-sm"
                       required
                     />
-                    <p className="text-[11px] text-emerald-700 mt-1">
-                      Safaricom mobile number registered for M-Pesa.
-                    </p>
+                    
                   </div>
 
                   {mpesaStatus && (
