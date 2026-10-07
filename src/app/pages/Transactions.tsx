@@ -545,7 +545,6 @@ export default function Transactions() {
                     M-Pesa Prompt
                   </div>
                   <div>
-                    <Label htmlFor="mpesaPhone" className="text-xs font-medium text-emerald-950">Patient M-Pesa Phone Number</Label>
                     <Input
                       id="mpesaPhone"
                       placeholder="e.g., 0712345678 or 2547XXXXXXXX"
@@ -554,7 +553,6 @@ export default function Transactions() {
                       className="mt-1 bg-white font-mono text-sm"
                       required
                     />
-                    
                   </div>
 
                   {mpesaStatus && (
