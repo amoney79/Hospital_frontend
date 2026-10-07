@@ -542,7 +542,7 @@ export default function Transactions() {
                 <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-3">
                   <div className="flex items-center gap-2 text-emerald-900 font-semibold text-sm">
                     <Smartphone className="w-4 h-4 text-emerald-700" />
-                    M-Pesa Prompt
+                    Enter M-Pesa number
                   </div>
                   <div>
                     <Input
