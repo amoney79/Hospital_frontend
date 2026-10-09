@@ -735,3 +735,51 @@ export const usersApi = {
     return true;
   },
 };
+
+// ─── Notification API ─────────────────────────────────────────────────────────
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+  channel: string;
+  recipient?: string;
+  status?: string;
+  deliveryDetails?: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export const notificationApi = {
+  async getForUser(userId: string): Promise<AppNotification[]> {
+    return fetchJson<AppNotification[]>(`${BASE_URL}/notifications/user/${userId}`, undefined, []);
+  },
+
+  async getUnreadCount(userId: string): Promise<number> {
+    try {
+      const data = await fetchJson<{ count: number }>(`${BASE_URL}/notifications/user/${userId}/unread-count`, undefined, { count: 0 });
+      return data.count;
+    } catch {
+      return 0;
+    }
+  },
+
+  async markRead(id: string): Promise<void> {
+    await fetchJson<void>(`${BASE_URL}/notifications/${id}/read`, { method: 'PATCH' });
+  },
+
+  async markAllRead(userId: string): Promise<void> {
+    await fetchJson<void>(`${BASE_URL}/notifications/user/${userId}/read-all`, { method: 'PATCH' });
+  },
+
+  async delete(id: string): Promise<void> {
+    await fetchJson<void>(`${BASE_URL}/notifications/${id}`, { method: 'DELETE' });
+  },
+
+  async create(payload: { userId: string; type: string; title: string; message: string; channel: string; recipient?: string }): Promise<AppNotification> {
+    return fetchJson<AppNotification>(`${BASE_URL}/notifications`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+};
+

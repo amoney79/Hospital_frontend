@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from 'react-router';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import {
   LayoutDashboard,
   Users,
@@ -16,13 +16,14 @@ import {
   LogOut,
   Bell,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useIdleTimer } from '../hooks/useIdleTimer';
 import { IdleSplashScreen } from './IdleSplashScreen';
 import { SubscriptionBanner } from './SubscriptionBanner';
 import { useHospitalSettings } from '../context/HospitalSettingsContext';
 import { canAccess } from '../roleAccess';
+import { notificationApi, AppNotification } from '../services/api';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -59,10 +60,49 @@ function NavLink({
   );
 }
 
-function NotificationBell() {
-  const { settings } = useHospitalSettings();
+/**
+ * Notification Bell — opens a small preview panel.
+ * Clicking "View all & manage" navigates to Settings → Notifications tab.
+ */
+function NotificationBell({ onNav }: { onNav?: () => void }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const notifications = settings.notifications.filter((notification) => notification.inApp);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Poll unread count every 30 s when there is a logged-in user
+  useEffect(() => {
+    if (!user?.id) return;
+    const load = () => {
+      notificationApi.getForUser(user.id).then((list) => {
+        setNotifications(list.slice(0, 10));
+        setUnreadCount(list.filter((n) => !n.read).length);
+      }).catch(() => {});
+    };
+    load();
+    const interval = setInterval(load, 30_000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
+  const handleMarkRead = async (id: string) => {
+    await notificationApi.markRead(id).catch(() => {});
+    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+    setUnreadCount((c) => Math.max(0, c - 1));
+  };
+
+  const handleMarkAllRead = async () => {
+    if (!user?.id) return;
+    await notificationApi.markAllRead(user.id).catch(() => {});
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setUnreadCount(0);
+  };
+
+  const goToNotificationSettings = () => {
+    setOpen(false);
+    onNav?.();
+    navigate('/settings?tab=notifications');
+  };
 
   return (
     <div className="relative">
@@ -73,21 +113,73 @@ function NotificationBell() {
         className="relative p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
       >
         <Bell className="w-5 h-5" />
-        {notifications.length > 0 && <span className="absolute right-1 top-1 w-2 h-2 rounded-full bg-red-500" />}
+        {unreadCount > 0 && (
+          <span className="absolute right-1 top-1 w-4 h-4 rounded-full bg-red-500 text-[9px] text-white flex items-center justify-center font-bold">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
       </button>
+
       {open && (
-        <div className="absolute right-0 top-11 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-gray-200 bg-white shadow-xl">
+        <div className="absolute right-0 top-11 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-gray-200 bg-white shadow-xl">
+          {/* Header */}
           <div className="flex items-center justify-between border-b px-4 py-3">
             <p className="font-semibold text-gray-900">Notifications</p>
-            <span className="text-xs text-gray-500">{notifications.length} enabled</span>
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllRead}
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  Mark all read
+                </button>
+              )}
+              <button
+                onClick={() => setOpen(false)}
+                className="text-gray-400 hover:text-gray-600 text-xs"
+              >
+                ✕
+              </button>
+            </div>
           </div>
-          <div className="max-h-80 overflow-y-auto divide-y">
-            {notifications.length === 0 ? <p className="px-4 py-6 text-sm text-gray-500">No notifications enabled.</p> : notifications.map((notification) => (
-              <div key={notification.id} className="px-4 py-3">
-                <p className="text-sm font-medium text-gray-900">{notification.label}</p>
-                <p className="mt-0.5 text-xs text-gray-500">{notification.description}</p>
-              </div>
-            ))}
+
+          {/* Notification list */}
+          <div className="max-h-72 overflow-y-auto divide-y">
+            {notifications.length === 0 ? (
+              <p className="px-4 py-6 text-sm text-gray-500 text-center">No notifications yet.</p>
+            ) : (
+              notifications.map((n) => (
+                <div
+                  key={n.id}
+                  className={`px-4 py-3 flex items-start gap-3 ${n.read ? 'opacity-60' : 'bg-blue-50/40'}`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium text-gray-900 truncate ${!n.read ? 'font-semibold' : ''}`}>{n.title}</p>
+                    <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">{n.message}</p>
+                    <p className="mt-0.5 text-[10px] text-gray-400">
+                      {new Date(n.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  {!n.read && (
+                    <button
+                      onClick={() => handleMarkRead(n.id)}
+                      title="Mark as read"
+                      className="shrink-0 w-2 h-2 mt-1 rounded-full bg-blue-500 hover:bg-blue-700"
+                    />
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Footer — links to Settings → Notifications */}
+          <div className="border-t px-4 py-2">
+            <button
+              onClick={goToNotificationSettings}
+              className="w-full text-center text-xs text-blue-600 hover:underline py-1"
+            >
+              View all &amp; manage notification settings →
+            </button>
           </div>
         </div>
       )}
@@ -151,7 +243,7 @@ export function Layout() {
             <div className="flex items-center justify-between gap-2">
               <HeartPulse className="w-6 h-6 text-blue-600" />
               <h1 className="text-xl font-semibold text-blue-600">AfyaCare MS</h1>
-              <NotificationBell />
+              <NotificationBell onNav={() => setSidebarOpen(false)} />
             </div>
             <button onClick={() => setSidebarOpen(false)} className="text-gray-500">
               <X className="w-6 h-6" />
@@ -204,7 +296,7 @@ export function Layout() {
           <div className="flex items-center justify-between gap-2">
             <HeartPulse className="w-5 h-5 text-blue-600" />
             <h1 className="text-xl font-semibold text-blue-600">AfyaCare MS</h1>
-            <NotificationBell />
+            <NotificationBell onNav={() => setSidebarOpen(false)} />
           </div>
         </div>
 

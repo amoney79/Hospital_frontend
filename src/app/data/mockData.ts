@@ -28,6 +28,8 @@ export interface Patient {
   gravida?: number;
   para?: number;
   lastMenstrualPeriod?: string;
+  // Tracking
+  createdAt?: string;
 }
 
 export interface Doctor {
