@@ -631,6 +631,7 @@ export const tenantApi = {
   },
 };
 
+// ─── mpesa API ───────────────────────────────────
 export const mpesaApi = {
   async initiateStkPush(request: MpesaStkRequest): Promise<{ checkoutRequestId: string; customerMessage?: string }> {
     return fetchJson<{ checkoutRequestId: string; customerMessage?: string }>(
