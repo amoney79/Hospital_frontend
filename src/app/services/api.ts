@@ -15,8 +15,10 @@ import {
 
 export function getApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
+
     // If running over HTTPS (such as ngrok tunnel), through Vite dev port 5173, or non-localhost,
     // use relative '/api' which Vite proxies to http://localhost:8081 without CORS or Mixed Content blocks.
+    
     if (window.location.protocol === 'https:' || window.location.hostname !== 'localhost' || window.location.port === '5173') {
       return '/api';
     }
