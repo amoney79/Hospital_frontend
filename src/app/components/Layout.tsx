@@ -61,26 +61,23 @@ function NavLink({
 }
 
 /**
- * Notification Bell — opens a small preview panel.
- * Clicking "View all & manage" navigates to Settings → Notifications tab.
- */
+/* Notification Bell — displays badge count and directly navigates to Settings → Notifications tab. */
 function NotificationBell({ onNav }: { onNav?: () => void }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Poll unread count every 30 s when there is a logged-in user
+  // Poll unread count every 30s when there is a logged-in user
   useEffect(() => {
     const userId = user?.id;
     if (!userId) return;
 
     const load = () => {
-      notificationApi.getForUser(userId).then((list) => {
-        setNotifications(list.slice(0, 10));
-        setUnreadCount(list.filter((n) => !n.read).length);
-      }).catch(() => {});
+      notificationApi.getForUser(userId)
+        .then((list) => {
+          setUnreadCount(list.filter((n) => !n.read).length);
+        })
+        .catch(() => {});
     };
 
     load();
@@ -88,21 +85,7 @@ function NotificationBell({ onNav }: { onNav?: () => void }) {
     return () => clearInterval(interval);
   }, [user?.id]);
 
-  const handleMarkRead = async (id: string) => {
-    await notificationApi.markRead(id).catch(() => {});
-    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
-    setUnreadCount((c) => Math.max(0, c - 1));
-  };
-
-  const handleMarkAllRead = async () => {
-    if (!user?.id) return;
-    await notificationApi.markAllRead(user.id).catch(() => {});
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    setUnreadCount(0);
-  };
-
-  const goToNotificationSettings = () => {
-    setOpen(false);
+  const handleClick = () => {
     onNav?.();
     navigate('/settings?tab=notifications');
   };
@@ -112,83 +95,21 @@ function NotificationBell({ onNav }: { onNav?: () => void }) {
       <button
         type="button"
         title="Notifications"
-        onClick={() => setOpen((current) => !current)}
+        onClick={handleClick}
         className="relative p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
       >
         <Bell className="w-5 h-5" />
+        
         {unreadCount > 0 && (
           <span className="absolute right-1 top-1 w-4 h-4 rounded-full bg-red-500 text-[9px] text-white flex items-center justify-center font-bold">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
-
-      {open && (
-        <div className="absolute right-0 top-11 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-gray-200 bg-white shadow-xl">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <p className="font-semibold text-gray-900">Notifications</p>
-            <div className="flex items-center gap-2">
-              {unreadCount > 0 && (
-                <button
-                  onClick={handleMarkAllRead}
-                  className="text-xs text-blue-600 hover:underline"
-                >
-                  Mark all read
-                </button>
-              )}
-              <button
-                onClick={() => setOpen(false)}
-                className="text-gray-400 hover:text-gray-600 text-xs"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-
-          {/* Notification list */}
-          <div className="max-h-72 overflow-y-auto divide-y">
-            {notifications.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-gray-500 text-center">No notifications yet.</p>
-            ) : (
-              notifications.map((n) => (
-                <div
-                  key={n.id}
-                  className={`px-4 py-3 flex items-start gap-3 ${n.read ? 'opacity-60' : 'bg-blue-50/40'}`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium text-gray-900 truncate ${!n.read ? 'font-semibold' : ''}`}>{n.title}</p>
-                    <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">{n.message}</p>
-                    <p className="mt-0.5 text-[10px] text-gray-400">
-                      {new Date(n.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                  {!n.read && (
-                    <button
-                      onClick={() => handleMarkRead(n.id)}
-                      title="Mark as read"
-                      className="shrink-0 w-2 h-2 mt-1 rounded-full bg-blue-500 hover:bg-blue-700"
-                    />
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Footer — links to Settings → Notifications */}
-          <div className="border-t px-4 py-2">
-            <button
-              onClick={goToNotificationSettings}
-              className="w-full text-center text-xs text-blue-600 hover:underline py-1"
-            >
-              View all &amp; manage notification settings →
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
+
 
 function SidebarFooter({ pathname, onNav }: { pathname: string; onNav?: () => void }) {
   const { user, logout } = useAuth();
