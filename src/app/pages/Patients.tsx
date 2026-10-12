@@ -749,9 +749,11 @@ export default function Patients() {
         setViewingPatient({ ...viewingPatient, ...updated });
       }
     } else {
+      const today = new Date().toISOString().split('T')[0];
       const created = await patientApi.create({
         ...data,
-        lastVisit: new Date().toISOString().split('T')[0],
+        createdAt: today,
+        lastVisit: today,
         status: 'active',
       });
       setPatients([created, ...patients]);

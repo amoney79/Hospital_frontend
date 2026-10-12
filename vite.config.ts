@@ -21,8 +21,9 @@ function figmaAssetResolver() {
 export default defineConfig({
   plugins: [
     figmaAssetResolver(),
-    // The React and Tailwind plugins are both required for Make, even if
-    // Tailwind is not being actively used – do not remove them
+    
+    // The React and Tailwind plugins are both required for Make
+
     react(),
     tailwindcss(),
   ],
@@ -34,8 +35,15 @@ export default defineConfig({
   },
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
-  // Add the server configuration to permit the ngrok tunnel host
+  // Add server configuration to permit the ngrok tunnel host and proxy API requests
   server: {
-    allowedHosts: ['reformer-crabgrass-paparazzi.ngrok-free.dev']
-  }
+    allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 })

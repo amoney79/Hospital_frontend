@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import {
   Building2,
   User,
@@ -11,7 +12,13 @@ import {
   Pencil,
   Trash2,
   CreditCard, 
-  ShieldCheck
+  ShieldCheck,
+  Mail,
+  Smartphone,
+  Send,
+  Plus,
+  CheckCircle2,
+  Inbox
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -21,8 +28,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { Switch } from '../components/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { Badge } from '../components/ui/badge';
 import { useHospitalSettings } from '../context/HospitalSettingsContext';
-import { HospitalSettings, SystemUser, UserSession, securityApi, usersApi, mpesaApi } from '../services/api';
+import { HospitalSettings, SystemUser, UserSession, securityApi, usersApi, mpesaApi, notificationApi, AppNotification } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { normalizeRole } from '../roleAccess';
 
@@ -475,6 +484,303 @@ const defaultNotifications: NotifRow[] = [
   },
 ];
 
+/* ── In-App Notifications Center ── */
+function InAppNotificationsPanel() {
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [filterChannel, setFilterChannel] = useState<'all' | 'in-app' | 'email' | 'sms'>('all');
+  const [isSendOpen, setIsSendOpen] = useState(false);
+  const [sendForm, setSendForm] = useState({
+    channel: 'in-app',
+    type: 'general',
+    title: '',
+    message: '',
+    recipient: '',
+  });
+  const [sendLoading, setSendLoading] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const loadNotifications = () => {
+    if (user?.id) {
+      notificationApi.getForUser(user.id).then(setNotifications).catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    loadNotifications();
+  }, [user?.id]);
+
+  const handleMarkRead = async (id: string) => {
+    await notificationApi.markRead(id).catch(() => {});
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  };
+
+  const handleMarkAllRead = async () => {
+    if (user?.id) {
+      await notificationApi.markAllRead(user.id).catch(() => {});
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    await notificationApi.delete(id).catch(() => {});
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSendLoading(true);
+    setFeedback(null);
+    try {
+      const created = await notificationApi.create({
+        userId: user?.id || 'admin',
+        type: sendForm.type,
+        title: sendForm.title,
+        message: sendForm.message,
+        channel: sendForm.channel,
+        recipient: sendForm.recipient,
+      });
+      setNotifications((prev) => [created, ...prev]);
+      setFeedback(`Notification sent successfully via ${sendForm.channel.toUpperCase()}!`);
+      setSendForm({ channel: 'in-app', type: 'general', title: '', message: '', recipient: '' });
+      setIsSendOpen(false);
+      setTimeout(() => setFeedback(null), 4000);
+    } catch (err: any) {
+      setFeedback(`Failed to dispatch notification: ${err?.message || 'Error'}`);
+    } finally {
+      setSendLoading(false);
+    }
+  };
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const filteredList = notifications.filter((n) => {
+    if (filterChannel === 'all') return true;
+    return n.channel?.toLowerCase() === filterChannel;
+  });
+
+  return (
+    <Card className="border-blue-100 shadow-sm">
+      <CardHeader className="pb-3 border-b bg-gray-50/50">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Inbox className="w-5 h-5 text-blue-600" />
+            <CardTitle className="text-base font-semibold text-gray-900">In-App &amp; Messaging Notifications</CardTitle>
+            {unreadCount > 0 && (
+              <Badge className="bg-blue-600 hover:bg-blue-700 text-white text-xs">
+                {unreadCount} unread
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={handleMarkAllRead} className="text-xs text-blue-600">
+                Mark all read
+              </Button>
+            )}
+            <Dialog open={isSendOpen} onOpenChange={setIsSendOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs flex items-center gap-1.5">
+                  <Plus className="w-3.5 h-3.5" /> Send Notification
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Send Notification (In-App, Email, SMS)</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSendNotification} className="space-y-4 mt-2">
+                  <div>
+                    <Label htmlFor="notifChannel">Delivery Channel</Label>
+                    <Select value={sendForm.channel} onValueChange={(val) => setSendForm({ ...sendForm, channel: val })}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="in-app">In-App Notification</SelectItem>
+                        <SelectItem value="email">Email Notification</SelectItem>
+                        <SelectItem value="sms">SMS Notification</SelectItem>
+                        <SelectItem value="all">All Channels (In-App + Email + SMS)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {(sendForm.channel === 'email' || sendForm.channel === 'sms' || sendForm.channel === 'all') && (
+                    <div>
+                      <Label htmlFor="recipient">
+                        {sendForm.channel === 'email' ? 'Recipient Email Address' : sendForm.channel === 'sms' ? 'Recipient Phone Number' : 'Recipient (Email / Phone)'}
+                      </Label>
+                      <Input
+                        id="recipient"
+                        placeholder={sendForm.channel === 'email' ? 'patient@example.com' : '0712345678 or +254...'}
+                        value={sendForm.recipient}
+                        onChange={(e) => setSendForm({ ...sendForm, recipient: e.target.value })}
+                        className="mt-1"
+                        required
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <Label htmlFor="notifType">Notification Type</Label>
+                    <Select value={sendForm.type} onValueChange={(val) => setSendForm({ ...sendForm, type: val })}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="general">General Notice</SelectItem>
+                        <SelectItem value="appointment">Appointment Reminder</SelectItem>
+                        <SelectItem value="billing">Payment / Billing Alert</SelectItem>
+                        <SelectItem value="stock">Low Stock Warning</SelectItem>
+                        <SelectItem value="emergency">Urgent Emergency</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="notifTitle">Title / Subject</Label>
+                    <Input
+                      id="notifTitle"
+                      placeholder="e.g. Appointment Confirmation"
+                      value={sendForm.title}
+                      onChange={(e) => setSendForm({ ...sendForm, title: e.target.value })}
+                      className="mt-1"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="notifMsg">Message Content</Label>
+                    <Textarea
+                      id="notifMsg"
+                      rows={3}
+                      placeholder="Enter the notification message to deliver..."
+                      value={sendForm.message}
+                      onChange={(e) => setSendForm({ ...sendForm, message: e.target.value })}
+                      className="mt-1"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button type="button" variant="outline" onClick={() => setIsSendOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={sendLoading} className="bg-blue-600 hover:bg-blue-700 text-white">
+                      <Send className="w-4 h-4 mr-1.5" />
+                      {sendLoading ? 'Sending...' : 'Send Now'}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* Channel Filters */}
+        <div className="flex items-center gap-1.5 mt-3 pt-2">
+          {(['all', 'in-app', 'email', 'sms'] as const).map((ch) => (
+            <button
+              key={ch}
+              type="button"
+              onClick={() => setFilterChannel(ch)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                filterChannel === ch
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white border text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {ch === 'all' ? 'All Channels' : ch === 'in-app' ? 'In-App' : ch === 'email' ? 'Email' : 'SMS'}
+            </button>
+          ))}
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-0">
+        {feedback && (
+          <div className="m-3 p-3 text-xs rounded-lg bg-green-50 border border-green-200 text-green-800 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+            {feedback}
+          </div>
+        )}
+
+        <div className="divide-y max-h-80 overflow-y-auto">
+          {filteredList.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              <Inbox className="w-8 h-8 mx-auto text-gray-400 mb-2 opacity-50" />
+              <p className="text-sm font-medium">No notifications in this channel.</p>
+              <p className="text-xs text-gray-400 mt-1">Use "Send Notification" above to dispatch In-App, Email, or SMS alerts.</p>
+            </div>
+          ) : (
+            filteredList.map((n) => (
+              <div
+                key={n.id}
+                className={`p-4 flex items-start justify-between gap-3 transition-colors ${
+                  n.read ? 'bg-white hover:bg-gray-50' : 'bg-blue-50/40 hover:bg-blue-50/60'
+                }`}
+              >
+                <div className="flex items-start gap-3 min-w-0 flex-1">
+                  <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${
+                    n.channel === 'email' ? 'bg-purple-100 text-purple-700' :
+                    n.channel === 'sms' ? 'bg-emerald-100 text-emerald-700' :
+                    'bg-blue-100 text-blue-700'
+                  }`}>
+                    {n.channel === 'email' ? <Mail className="w-4 h-4" /> :
+                     n.channel === 'sms' ? <Smartphone className="w-4 h-4" /> :
+                     <Bell className="w-4 h-4" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className={`text-sm text-gray-900 ${!n.read ? 'font-semibold' : 'font-medium'}`}>{n.title}</p>
+                      <Badge variant="outline" className="text-[10px] uppercase font-mono px-1.5 py-0">
+                        {n.channel || 'in-app'}
+                      </Badge>
+                      {n.recipient && (
+                        <span className="text-[11px] text-gray-500 font-mono">
+                          to: {n.recipient}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1 leading-relaxed">{n.message}</p>
+                    {n.deliveryDetails && (
+                      <p className="text-[11px] text-gray-400 mt-0.5">{n.deliveryDetails}</p>
+                    )}
+                    <p className="text-[10px] text-gray-400 mt-1">
+                      {new Date(n.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  {!n.read && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleMarkRead(n.id)}
+                      className="text-xs text-blue-600 hover:text-blue-700 h-7 px-2"
+                      title="Mark as read"
+                    >
+                      Mark Read
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(n.id)}
+                    className="text-gray-400 hover:text-red-600 h-7 w-7 p-0"
+                    title="Delete notification"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function NotificationSettings() {
   const { settings, saveSettings } = useHospitalSettings();
   const { user } = useAuth();
@@ -499,9 +805,15 @@ function NotificationSettings() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
+      {/* In-App Notifications Center directly above notification settings */}
+      <InAppNotificationsPanel />
+
+      <SectionCard title="Notification Preferences &amp; Triggers">
+        <div className="space-y-4">
+          <p className="text-xs text-gray-500">
+            Configure automated system triggers for Email, SMS, and In-App delivery across the hospital modules.
+          </p>
+          <div className="overflow-x-auto border rounded-lg">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
@@ -541,8 +853,8 @@ function NotificationSettings() {
               </tbody>
             </table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
 
       <div className="flex items-center justify-between">
         {saved ? <SavedBanner /> : <span />}
@@ -970,15 +1282,31 @@ function MpesaSettings() {
 export default function Settings() {
   const { user } = useAuth();
   const isAdmin = normalizeRole(user?.role) === 'admin';
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const tabParam = searchParams.get('tab');
+  const defaultTab = tabParam || (isAdmin ? 'general' : 'account');
+  const [activeTab, setActiveTab] = useState(defaultTab);
+
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val);
+    setSearchParams({ tab: val });
+  };
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-semibold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-1">Manage system configuration and preferences</p>
+        <p className="text-gray-600 mt-1">Manage system configuration, notifications, and preferences</p>
       </div>
 
-      <Tabs defaultValue={isAdmin ? 'general' : 'account'}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="mb-6">
           {isAdmin && (
             <TabsTrigger value="general" className="flex items-center gap-2">
@@ -998,10 +1326,12 @@ export default function Settings() {
             <Shield className="w-4 h-4" />
             Security
           </TabsTrigger>
-          <TabsTrigger value="mpesa" className="flex items-center gap-2">
-            <CreditCard className="w-4 h-4" />
-            M-Pesa
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="mpesa" className="flex items-center gap-2">
+              <CreditCard className="w-4 h-4" />
+              M-Pesa
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {isAdmin && <TabsContent value="general"><GeneralSettings /></TabsContent>}
@@ -1014,9 +1344,11 @@ export default function Settings() {
         <TabsContent value="security">
           <SecuritySettings />
         </TabsContent>
-        <TabsContent value="mpesa">
-          <MpesaSettings />
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="mpesa">
+            <MpesaSettings />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
