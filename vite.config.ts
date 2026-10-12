@@ -6,7 +6,6 @@ import react from '@vitejs/plugin-react'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-
 function figmaAssetResolver() {
   return {
     name: 'figma-asset-resolver',
@@ -33,7 +32,10 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
+  // Add the server configuration to permit the ngrok tunnel host
+  server: {
+    allowedHosts: ['reformer-crabgrass-paparazzi.ngrok-free.dev']
+  }
 })
