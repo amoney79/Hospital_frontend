@@ -73,13 +73,16 @@ function NotificationBell({ onNav }: { onNav?: () => void }) {
 
   // Poll unread count every 30 s when there is a logged-in user
   useEffect(() => {
-    if (!user?.id) return;
+    const userId = user?.id;
+    if (!userId) return;
+
     const load = () => {
-      notificationApi.getForUser(user.id).then((list) => {
+      notificationApi.getForUser(userId).then((list) => {
         setNotifications(list.slice(0, 10));
         setUnreadCount(list.filter((n) => !n.read).length);
       }).catch(() => {});
     };
+
     load();
     const interval = setInterval(load, 30_000);
     return () => clearInterval(interval);
