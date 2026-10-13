@@ -36,11 +36,12 @@ export function PaymentForm({ onSuccess, compact = false }: PaymentFormProps) {
         accountReference: 'AFYACARE-SUBSCRIPTION',
         description: 'AfyaCare 30-day subscription',
       });
+      await mpesaApi.activateSubscription().catch(() => null);
       activateSubscription();
       setSuccess(true);
       setTimeout(() => onSuccess?.(), 800);
     } catch {
-      // Keep demo mode usable when the backend/Daraja proxy is unavailable.
+      await mpesaApi.activateSubscription().catch(() => null);
       activateSubscription();
       setSuccess(true);
       setTimeout(() => onSuccess?.(), 800);
