@@ -103,8 +103,8 @@ export default function Transactions() {
 
         if (result.success) {
           setMpesaStatus({
-            type: 'success',
-            message: result.customerMessage || `STK Push prompt sent to ${mpesaPhone}! Please ask the client to check their phone and enter their M-Pesa PIN.`,
+            type: 'info',
+            message: result.customerMessage || `STK Push prompt sent to ${mpesaPhone}! Please ask the client to check their phone and enter their M-Pesa PIN. Waiting for confirmation...`,
           });
           // Update transaction in local state with pending M-Pesa details
           setTransactions((prev) =>
@@ -114,13 +114,46 @@ export default function Transactions() {
                 : t
             )
           );
-          // Refresh transactions after a short delay
-          setTimeout(async () => {
+
+          // Poll for payment confirmation
+          let pollAttempts = 0;
+          const maxAttempts = 20; // 20 * 2.5s = 50s
+          const intervalId = setInterval(async () => {
+            pollAttempts++;
             try {
-              const refreshed = await transactionApi.getAll();
-              setTransactions(refreshed);
-            } catch { /* ignore */ }
-          }, 6000);
+              const statusRes = await transactionApi.getStkStatus(paymentTransaction.id);
+              if (statusRes.paid || statusRes.status === 'paid' || statusRes.status === 'partial') {
+                clearInterval(intervalId);
+                setMpesaStatus({
+                  type: 'success',
+                  message: `Payment received successfully! ${statusRes.receipt ? 'Receipt: ' + statusRes.receipt : ''}`,
+                });
+                const refreshed = await transactionApi.getAll().catch(() => []);
+                if (refreshed.length > 0) setTransactions(refreshed);
+                setTimeout(() => {
+                  setIsPaymentDialogOpen(false);
+                  setPaymentTransaction(null);
+                  setMpesaStatus(null);
+                }, 2000);
+                return;
+              } else if (statusRes.status === 'cancelled' || statusRes.status === 'failed') {
+                clearInterval(intervalId);
+                setMpesaStatus({
+                  type: 'error',
+                  message: statusRes.message || 'Payment prompt was cancelled or failed.',
+                });
+                return;
+              }
+            } catch { /* continue polling */ }
+
+            if (pollAttempts >= maxAttempts) {
+              clearInterval(intervalId);
+              setMpesaStatus({
+                type: 'info',
+                message: 'STK Push sent. Once the client enters their PIN, the status will update on refresh.',
+              });
+            }
+          }, 2500);
         } else {
           setMpesaStatus({
             type: 'error',

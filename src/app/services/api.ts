@@ -231,9 +231,10 @@ function setLocalValue(key: string, value: unknown) {
 
 async function fetchJson<T>(url: string, options?: RequestInit, fallbackData?: T): Promise<T> {
   const tenantId = localStorage.getItem('hms_tenant_id');
+  const validTenant = tenantId && tenantId !== 'undefined' && tenantId !== 'null' && tenantId.trim() !== '';
   const headers = {
     'Content-Type': 'application/json',
-    ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
+    ...(validTenant ? { 'X-Tenant-ID': tenantId.trim() } : {}),
     ...options?.headers,
   };
 
@@ -532,6 +533,12 @@ export const transactionApi = {
     );
   },
 
+  async getStkStatus(id: string): Promise<{ status: string; paid: boolean; amountPaid?: number; receipt?: string; message?: string }> {
+    return fetchJson<{ status: string; paid: boolean; amountPaid?: number; receipt?: string; message?: string }>(
+      `${BASE_URL}/transactions/${id}/stk-status`
+    );
+  },
+
   async delete(id: string): Promise<boolean> {
     try {
       await fetch(`${BASE_URL}/transactions/${id}`, { method: 'DELETE' });
@@ -715,6 +722,27 @@ export const mpesaApi = {
         message: 'M-Pesa settings saved and encrypted successfully in the database.',
       };
     }
+  },
+
+  async getSubscriptionStatus(tenantId?: string): Promise<{
+    subscriptionActive: boolean;
+    hasValidSubscription: boolean;
+    subscriptionDaysRemaining: number;
+    trialDaysRemaining: number;
+    isTrialExpired: boolean;
+    plan?: string;
+  }> {
+    const tid = tenantId || localStorage.getItem('hms_tenant_id') || '';
+    const query = tid && tid !== 'undefined' && tid !== 'null' ? `?tenantId=${encodeURIComponent(tid)}` : '';
+    return fetchJson(`${BASE_URL}/subscriptions/status${query}`);
+  },
+
+  async activateSubscription(tenantId?: string): Promise<{ success: boolean; daysRemaining: number }> {
+    const tid = tenantId || localStorage.getItem('hms_tenant_id') || undefined;
+    return fetchJson(`${BASE_URL}/subscriptions/activate`, {
+      method: 'POST',
+      body: JSON.stringify({ tenantId: tid }),
+    });
   },
 };
 
