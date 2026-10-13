@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
-import { authApi } from '../services/api';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from 'react';
+import { authApi, mpesaApi } from '../services/api';
 
 const TRIAL_DAYS = 7;
 const SUB_DAYS = 30;
@@ -68,6 +68,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [pendingDemoUser, setPendingDemoUser] = useState<AuthUser | null>(null);
 
+  // Sync subscription status with MongoDB backend
+  useEffect(() => {
+    mpesaApi.getSubscriptionStatus().then((status) => {
+      if (status.hasValidSubscription || status.subscriptionActive) {
+        if (!paymentDate) {
+          const activeDate = new Date().toISOString();
+          save('hms_payment_date', activeDate);
+          setPaymentDate(activeDate);
+        }
+      }
+    }).catch(() => {
+      // Offline fallback
+    });
+  }, [user]);
+
   // Trial
   const trialDaysSince = trialStart ? daysSince(trialStart) : 0;
   const trialDaysRemaining = TRIAL_DAYS - trialDaysSince;
@@ -81,16 +96,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const showRenewalReminder = hasValidSubscription && subscriptionDaysRemaining <= REMINDER_DAYS;
 
   // Finalizes the session state after successful credentials/2FA check
-    const completeAuth = useCallback((userData: AuthUser, token?: string) => {
-      if (token) save('hms_session_id', token);
-      save('hms_user', userData);
-      setUser(userData);
-      if (!trialStart) {
-        const now = new Date().toISOString();
-        save('hms_trial_start', now);
-        setTrialStart(now);
+  const completeAuth = useCallback((userData: AuthUser, token?: string) => {
+    if (token) save('hms_session_id', token);
+    save('hms_user', userData);
+    setUser(userData);
+    if (!trialStart) {
+      const now = new Date().toISOString();
+      save('hms_trial_start', now);
+      setTrialStart(now);
+    }
+    // Refresh subscription status from backend
+    mpesaApi.getSubscriptionStatus().then((status) => {
+      if (status.hasValidSubscription || status.subscriptionActive) {
+        const activeDate = new Date().toISOString();
+        save('hms_payment_date', activeDate);
+        setPaymentDate(activeDate);
       }
-    }, [trialStart]);
+    }).catch(() => null);
+  }, [trialStart]);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
